@@ -1,9 +1,12 @@
 package com.tareasdomesticas.backend.service;
 
+import com.tareasdomesticas.backend.dto.RegistroUsuarioRequest;
 import com.tareasdomesticas.backend.entity.Usuario;
 import com.tareasdomesticas.backend.repository.UsuarioRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,9 +14,11 @@ import java.util.Optional;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, BCryptPasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<Usuario> listarTodos() {
@@ -33,6 +38,21 @@ public class UsuarioService {
     }
 
     public Usuario guardar(Usuario usuario) {
+        return usuarioRepository.save(usuario);
+    }
+
+    public Usuario registrarUsuario(RegistroUsuarioRequest request) {
+        if (usuarioRepository.existsByCorreo(request.getCorreo())) {
+            throw new RuntimeException("El correo ya está registrado");
+        }
+
+        Usuario usuario = new Usuario();
+        usuario.setNombre(request.getNombre());
+        usuario.setCorreo(request.getCorreo());
+        usuario.setContrasenaHash(passwordEncoder.encode(request.getContrasena()));
+        usuario.setPinSeguridadHash(passwordEncoder.encode(request.getPinSeguridad()));
+        usuario.setCreadoEn(LocalDateTime.now());
+
         return usuarioRepository.save(usuario);
     }
 }

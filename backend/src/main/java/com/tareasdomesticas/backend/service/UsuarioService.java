@@ -55,4 +55,20 @@ public class UsuarioService {
 
         return usuarioRepository.save(usuario);
     }
+
+    public Usuario validarCredenciales(String correo, String contrasena) {
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByCorreo(correo);
+
+        if (usuarioOpt.isEmpty()) {
+            throw new RuntimeException("Credenciales inválidas");
+        }
+
+        Usuario usuario = usuarioOpt.get();
+
+        if (!passwordEncoder.matches(contrasena, usuario.getContrasenaHash())) {
+            throw new RuntimeException("Credenciales inválidas");
+        }
+
+        return usuario;
+    }
 }

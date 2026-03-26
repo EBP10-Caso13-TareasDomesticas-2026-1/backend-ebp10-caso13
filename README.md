@@ -259,4 +259,4 @@ Para ello ya se dejó creado el package `dto` y el DTO inicial:
 
 ## Autoría y trabajo en equipo
 
-Desarrollado para el equipo **EBP10 de CodeF@ctory**.
+Desarrollado para el equipo de **Análisis 2 - EBP10 de CodeF@ctory**.

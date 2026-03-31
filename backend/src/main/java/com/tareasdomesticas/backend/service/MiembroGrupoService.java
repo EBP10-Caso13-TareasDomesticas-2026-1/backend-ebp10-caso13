@@ -4,6 +4,7 @@ import com.tareasdomesticas.backend.entity.MiembroGrupo;
 import com.tareasdomesticas.backend.repository.MiembroGrupoRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,13 @@ public class MiembroGrupoService {
     }
 
     public MiembroGrupo guardar(MiembroGrupo miembroGrupo) {
+        if (miembroGrupo.getFechaUnion() == null) {
+            miembroGrupo.setFechaUnion(LocalDateTime.now());
+        }
         return miembroGrupoRepository.save(miembroGrupo);
+    }
+
+    public MiembroGrupo crearMiembro(MiembroGrupo miembroGrupo) {
+        return guardar(miembroGrupo);
     }
 }

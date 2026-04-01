@@ -3,8 +3,6 @@ package com.tareasdomesticas.backend.controller;
 import com.tareasdomesticas.backend.entity.Usuario;
 import com.tareasdomesticas.backend.service.UsuarioService;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -21,10 +19,5 @@ public class UsuarioController {
     @GetMapping("/usuarios")
     public List<Usuario> listarUsuarios() {
         return usuarioService.listarTodos();
-    }
-
-    @PostMapping("/usuarios")
-    public Usuario crearUsuario(@RequestBody Usuario usuario) {
-        return usuarioService.guardar(usuario);
     }
 }

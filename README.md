@@ -1,262 +1,155 @@
 # backend-ebp10-caso13
 
-Backend de la aplicación del Caso 13 (**Sistema de Organización de Tareas Domésticas**) desarrollado para el equipo **EBP10 de CodeF@ctory**.
-
-## Descripción del proyecto
-
-Este repositorio contiene la base del backend del sistema para la organización de tareas domésticas en grupos familiares.  
-En esta primera etapa se construyó la estructura inicial del proyecto en **Java con Spring Boot**, conectada a **PostgreSQL**, y se dejó implementada la base técnica para el Sprint 1.
-
-El backend fue organizado en capas y preparado para soportar las historias de usuario iniciales relacionadas con autenticación de usuarios y gestión básica del grupo familiar.
+Backend del **Sistema de Organización de Tareas Domésticas** (Caso 13), desarrollado con **Java + Spring Boot** y **PostgreSQL** por el equipo **EBP10 de CodeF@ctory**.
 
 ---
 
-## Objetivo del Sprint 1
+## Heramientas y lenguajes:
 
-El Sprint 1 estuvo enfocado en dejar lista la base de datos y la estructura backend necesaria para soportar las siguientes funcionalidades iniciales:
+| Herramienta | Versión |
+|---|---|
+| IDE | IntelliJ IDEA |
+| Lenguaje | Java |
+| JDK | 17 |
+| Build tool | Maven |
+| Framework | Spring Boot 4.0.4 |
+| Base de datos | PostgreSQL 17.9 |
+| Gestor BD visual | pgAdmin 4 |
+| Control de versiones | Git + GitHub |
 
-- Registro de usuario
-- Inicio de sesión
-- Cierre de sesión
-- Creación de grupo familiar
-- Invitación y unión de miembros mediante código
-
----
-
-## Herramientas y versiones utilizadas
-
-### Entorno de desarrollo
-- **IDE:** IntelliJ IDEA
-- **Lenguaje:** Java
-- **JDK:** 17
-- **Build tool:** Maven
-- **Framework backend:** Spring Boot 4.0.4
-- **Base de datos:** PostgreSQL 17.9
-- **Gestor visual de base de datos:** pgAdmin 4
-- **Control de versiones:** Git + GitHub
-
-### Dependencias principales
-- Spring Web
-- Spring Data JPA
-- PostgreSQL Driver
+**Dependencias principales:** Spring Web · Spring Data JPA · PostgreSQL Driver
 
 ---
 
-## Estructura base implementada
+## Estructura del proyecto
 
-El proyecto fue organizado con una estructura en capas para facilitar la separación de responsabilidades:
-
-- `entity` → entidades JPA que representan las tablas de la base de datos
-- `repository` → acceso a datos mediante `JpaRepository`
-- `service` → lógica base de negocio y operaciones intermedias
-- `controller` → endpoints REST de prueba y verificación
-- `dto` → objetos de transferencia de datos para comenzar el manejo de historias reales
-
----
-
-## Base de datos del Sprint 1
-
-Se creó y validó la base de datos principal:
-
-- `tareas_domesticas`
-
-Y también una base de prueba para validar el script limpio:
-
-- `tareas_domesticas_test`
-
-### Tablas creadas para el Sprint 1
-- `roles`
-- `usuarios`
-- `grupos`
-- `miembros_grupo`
-- `sesiones`
-
-### Propósito de cada tabla
-
-#### `roles`
-Almacena los roles base del sistema:
-- ADMINISTRADOR
-- MIEMBRO
-
-#### `usuarios`
-Guarda la información básica de los usuarios registrados:
-- nombre
-- correo
-- hash de contraseña
-- hash de pin de seguridad
-- fecha de creación
-
-#### `grupos`
-Representa los grupos familiares del sistema:
-- nombre del grupo
-- código de invitación
-- fecha de creación
-
-#### `miembros_grupo`
-Relaciona:
-- usuario
-- grupo
-- rol
-
-Esta tabla permite saber qué usuario pertenece a qué grupo y con qué rol.
-
-#### `sesiones`
-Permite modelar el inicio y cierre de sesión:
-- usuario asociado
-- token
-- fecha de creación
-- fecha de expiración
-- fecha de cierre
+```
+backend/
+├── entity/       → Entidades JPA (tablas de la BD)
+├── repository/   → Acceso a datos con JpaRepository
+├── service/      → Lógica de negocio
+├── controller/   → Endpoints REST
+└── dto/          → Objetos de transferencia de datos
+```
 
 ---
 
-## Script SQL generado
+## Base de datos — Sprint 1
 
-Se generó y validó un script limpio de creación de base de datos para el Sprint 1:
+**Base de datos principal:** `tareas_domesticas`
+**Base de prueba:** `tareas_domesticas_test`
 
-- creación de tablas
-- llaves primarias
-- llaves foráneas
-- restricciones `UNIQUE`
-- carga inicial de roles
+**Tablas creadas:**
 
-Este script fue probado desde cero en una base separada para asegurar que pudiera ejecutarse correctamente sin depender de pruebas previas.
+| Tabla | Propósito |
+|---|---|
+| `roles` | Roles del sistema: ADMINISTRADOR y MIEMBRO |
+| `usuarios` | Datos de registro: nombre, correo, contraseña (hash), pin (hash) |
+| `grupos` | Grupos familiares con código de invitación |
+| `miembros_grupo` | Relación usuario ↔ grupo ↔ rol |
+| `sesiones` | Control de inicio/cierre de sesión con token |
 
----
-
-## Validaciones realizadas en PostgreSQL
-
-Durante la construcción de la base de datos se realizaron pruebas manuales para verificar:
-
-- creación correcta de usuarios
-- creación correcta de grupos
-- asociación de usuarios a grupos
-- asignación de roles
-- creación de sesiones
-- cierre de sesión
-- restricción para evitar duplicar un mismo usuario dentro del mismo grupo
-
-También se verificó la correcta relación entre tablas mediante consultas SQL con `JOIN`.
+El script de creación limpio está en [`Sprint_1.sql`](./Sprint_1.sql) e incluye tablas, llaves primarias, foráneas, restricciones UNIQUE y carga inicial de roles.
 
 ---
 
-## Configuración del backend con Spring Boot
+## Endpoints disponibles (verificación)
 
-Se creó un proyecto Spring Boot con Maven y se configuró la conexión con PostgreSQL usando `application.properties`.
+```
+GET /usuarios
+GET /grupos
+GET /roles
+GET /miembros-grupo
+GET /sesiones
+```
 
-### Configuración aplicada
-- conexión al motor PostgreSQL local
-- acceso con usuario `postgres`
-- uso de la base `tareas_domesticas`
-- `spring.jpa.hibernate.ddl-auto=none` para evitar que Spring modificara las tablas ya creadas manualmente
-
----
-
-## Entidades JPA implementadas
-
-Se crearon las siguientes entidades:
-
-- `Role`
-- `Usuario`
-- `Grupo`
-- `MiembroGrupo`
-- `Sesion`
-
-Estas entidades fueron mapeadas a las tablas del Sprint 1 usando anotaciones JPA.
+> Estos endpoints validan que la conexión entre Spring Boot y PostgreSQL funcione correctamente.
 
 ---
 
-## Repositories implementados
+## Estado actual — Sprint 1
 
-Se crearon los repositories base para acceso a datos:
-
-- `RoleRepository`
-- `UsuarioRepository`
-- `GrupoRepository`
-- `MiembroGrupoRepository`
-- `SesionRepository`
-
-Además, en `UsuarioRepository` se agregó soporte para:
-
-- buscar usuario por correo
-- validar si un correo ya existe
+- [x] Estructura del backend en capas
+- [x] Base de datos funcional con script validado
+- [x] Conexión Spring Boot ↔ PostgreSQL
+- [x] Entidades JPA, Repositories y Services base
+- [x] Endpoints GET de verificación funcionando
+- [ ] **Próximo:** Implementar historia de registro de usuario (DTO `RegistroUsuarioRequest` ya creado)
 
 ---
 
-## Services implementados
+## Clonar y configurar el proyecto en tu máquina
 
-Se crearon los services base:
+### 1. Requisitos previos
 
-- `RoleService`
-- `UsuarioService`
-- `GrupoService`
-- `MiembroGrupoService`
-- `SesionService`
+Asegúrate de tener instalado:
 
-Estos servicios permiten centralizar operaciones básicas como:
+- [JDK 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
+- [IntelliJ IDEA](https://www.jetbrains.com/idea/download/)
+- [PostgreSQL 17](https://www.postgresql.org/download/) + pgAdmin 4
+- [Git](https://git-scm.com/downloads)
 
-- listar registros
-- buscar por id
-- guardar entidades
-- validar existencia de correo en usuarios
+### 2. Clonar el repositorio
 
----
+Abre una terminal y ejecuta:
 
-## Controllers implementados
+```bash
+git clone https://github.com/EBP10-Caso13-TareasDomesticas-2026-1/backend-ebp10-caso13.git
+cd backend-ebp10-caso13
+```
 
-Se crearon endpoints iniciales de verificación para comprobar la conexión completa entre:
+### 3. Crear la base de datos
 
-- controlador
-- servicio
-- repository
-- entidad
-- base de datos
+Abre **pgAdmin 4** (o la terminal de PostgreSQL) y crea la base de datos:
 
-### Endpoints disponibles actualmente
-- `GET /usuarios`
-- `GET /grupos`
-- `GET /roles`
-- `GET /miembros-grupo`
-- `GET /sesiones`
+```sql
+CREATE DATABASE tareas_domesticas;
+```
 
-Estos endpoints fueron usados para validar que el backend estaba leyendo correctamente la información almacenada en PostgreSQL.
+Luego ejecuta el script del Sprint 1 sobre esa base:
 
----
+```
+Archivo: Sprint_1.sql (en la raíz del repositorio)
+```
 
-## Estado actual del backend
+Puedes hacerlo desde pgAdmin: clic derecho sobre `tareas_domesticas` → **Query Tool** → abrir el archivo y ejecutar.
 
-Hasta este punto, el proyecto ya cuenta con:
+### 4. Configurar la conexión en Spring Boot
 
-- estructura inicial del backend
-- base de datos funcional del Sprint 1
-- conexión exitosa entre Spring Boot y PostgreSQL
-- entidades JPA mapeadas
-- repositories y services base
-- endpoints GET de prueba funcionando
-- proyecto versionado y subido al repositorio de GitHub
+Abre el archivo `backend/src/main/resources/application.properties` y ajusta con tus credenciales locales de PostgreSQL:
 
----
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/tareas_domesticas
+spring.datasource.username=postgres
+spring.datasource.password=TU_CONTRASEÑA_AQUÍ
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.show-sql=true
+```
 
-## Próximo paso
+>  Reemplaza `TU_CONTRASEÑA_AQUÍ` con la contraseña que configuraste al instalar PostgreSQL. No subas este archivo con tu contraseña real al repositorio.
 
-El siguiente bloque de trabajo corresponde a comenzar la implementación de la primera historia real del Sprint 1:
+### 5. Abrir y ejecutar el proyecto en IntelliJ
 
-- **registro de usuario**
+1. Abre IntelliJ IDEA → **File > Open** → selecciona la carpeta `backend/`
+2. Espera a que Maven descargue las dependencias automáticamente
+3. Busca la clase principal `BackendApplication.java` y ejecútala con el botón ▶️
+4. Verifica en el navegador o Postman que el backend responde en `http://localhost:8080`
 
-Para ello ya se dejó creado el package `dto` y el DTO inicial:
+### 6. Verificar que todo funciona
 
-- `RegistroUsuarioRequest`
+Prueba uno de los endpoints en tu navegador o Postman:
 
----
+```
+GET http://localhost:8080/roles
+```
 
-## Notas
-
-- La base relacional usada en esta etapa corresponde únicamente al alcance del Sprint 1.
-- Las tablas relacionadas con tareas, estados, prioridades, comentarios, categorías, score y reportes quedan para los siguientes sprints.
-- El enfoque inicial fue asegurar primero una base sólida de persistencia y arquitectura antes de implementar la lógica completa de negocio.
+Si ves la lista de roles, el backend está funcionando correctamente. 
 
 ---
 
-## Autoría y trabajo en equipo
 
-Desarrollado para el equipo de **Análisis 2 - EBP10 de CodeF@ctory**.
+## Equipo
+
+Desarrollado por el equipo **EBP10 — Análisis 2, CodeF@ctory**.
+
+

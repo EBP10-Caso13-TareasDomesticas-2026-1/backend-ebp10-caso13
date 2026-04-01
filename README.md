@@ -147,6 +147,51 @@ Si ves la lista de roles, el backend está funcionando correctamente.
 
 ---
 
+## Despliegue en Render (Docker)
+
+Este repositorio incluye un `Dockerfile` en la raiz adaptado a la estructura real del proyecto (`backend/`).
+
+### 1. Crear servicios en Render
+
+1. Crea una base de datos PostgreSQL administrada en Render.
+2. Crea un **Web Service** conectado a este repositorio.
+3. Selecciona despliegue por Docker (`Dockerfile`).
+
+### 2. Variables de entorno requeridas
+
+Configura estas variables en el Web Service:
+
+- `SPRING_DATASOURCE_URL` (ejemplo: `jdbc:postgresql://<host>:5432/<db>`)
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+- `SPRING_JPA_HIBERNATE_DDL_AUTO=validate` (recomendado en entorno cloud)
+
+Opcionales:
+
+- `SERVER_PORT=8080`
+- `SPRING_JPA_SHOW_SQL=false`
+
+> `application.properties` ya esta preparado para leer estas variables de entorno.
+
+### 3. Inicializar el esquema de base de datos
+
+Antes del primer arranque del backend, ejecuta el script:
+
+- [`Sprint_1.sql`](./Sprint_1.sql)
+
+Esto es necesario porque el proyecto usa `ddl-auto=none` por defecto.
+
+### 4. Verificacion post despliegue
+
+Cuando Render marque el servicio como `Live`, valida:
+
+- `GET /roles`
+- `GET /usuarios`
+
+Si responde correctamente, el backend quedo desplegado y conectado a PostgreSQL.
+
+---
+
 
 ## Equipo
 

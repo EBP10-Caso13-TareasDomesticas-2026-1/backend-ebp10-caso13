@@ -1,0 +1,10 @@
+.git
+.gitignore
+.idea
+.vscode
+.postman
+postman
+backend/target
+backend/.idea
+**/.DS_Store
+*.log

@@ -4,4 +4,5 @@ import com.tareasdomesticas.backend.entity.MiembroGrupo;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MiembroGrupoRepository extends JpaRepository<MiembroGrupo, Long> {
+    boolean existsByUsuario_IdUsuario(Long idUsuario);
 }

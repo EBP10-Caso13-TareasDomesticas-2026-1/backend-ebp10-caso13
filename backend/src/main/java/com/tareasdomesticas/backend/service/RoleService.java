@@ -24,6 +24,10 @@ public class RoleService {
         return roleRepository.findById(id);
     }
 
+    public Optional<Role> buscarPorNombre(String nombre) {
+        return roleRepository.findByNombre(nombre);
+    }
+
     public Role guardar(Role role) {
         return roleRepository.save(role);
     }

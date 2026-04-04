@@ -1,12 +1,15 @@
 package com.tareasdomesticas.backend.service;
 
 import com.tareasdomesticas.backend.entity.Sesion;
+import com.tareasdomesticas.backend.entity.Usuario;
 import com.tareasdomesticas.backend.repository.SesionRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class SesionService {
@@ -29,13 +32,20 @@ public class SesionService {
         return sesionRepository.save(sesion);
     }
 
-    public void cerrarSesion(String token) {
-        if (token == null || token.isBlank()) {
-            throw new IllegalArgumentException("Token no valido");
-        }
+    public Sesion crearSesion(Usuario usuario) {
+        Sesion sesion = new Sesion();
+        sesion.setUsuario(usuario);
+        sesion.setToken(UUID.randomUUID().toString());
+        sesion.setCreadaEn(LocalDateTime.now());
+        sesion.setExpiraEn(LocalDateTime.now().plusMinutes(15));
+        sesion.setCerradaEn(null);
 
+        return sesionRepository.save(sesion);
+    }
+
+    public void cerrarSesion(String token) {
         Sesion sesion = sesionRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("Sesion no encontrada para el token proporcionado"));
+                .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
 
         sesion.setCerradaEn(LocalDateTime.now());
         sesionRepository.save(sesion);

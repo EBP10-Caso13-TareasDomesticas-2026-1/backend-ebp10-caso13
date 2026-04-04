@@ -28,7 +28,7 @@ public class MiembroGrupoService {
         return miembroGrupoRepository.save(miembroGrupo);
     }
 
-    public boolean usuarioYaPerteneceAGrupo(Long idUsuario) {
-        return miembroGrupoRepository.existsByUsuario_IdUsuario(idUsuario);
+    public boolean usuarioYaPerteneceAGrupo(Long usuarioId) {
+        return miembroGrupoRepository.findByUsuarioId(usuarioId).isPresent();
     }
 }

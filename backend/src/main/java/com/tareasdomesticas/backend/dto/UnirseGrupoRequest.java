@@ -2,23 +2,23 @@ package com.tareasdomesticas.backend.dto;
 
 public class UnirseGrupoRequest {
 
-    private Long idUsuario;
+    private Long usuarioId;
     private String codigoInvitacion;
 
     public UnirseGrupoRequest() {
     }
 
-    public UnirseGrupoRequest(Long idUsuario, String codigoInvitacion) {
-        this.idUsuario = idUsuario;
+    public UnirseGrupoRequest(Long usuarioId, String codigoInvitacion) {
+        this.usuarioId = usuarioId;
         this.codigoInvitacion = codigoInvitacion;
     }
 
-    public Long getIdUsuario() {
-        return idUsuario;
+    public Long getUsuarioId() {
+        return usuarioId;
     }
 
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
+    public void setUsuarioId(Long usuarioId) {
+        this.usuarioId = usuarioId;
     }
 
     public String getCodigoInvitacion() {

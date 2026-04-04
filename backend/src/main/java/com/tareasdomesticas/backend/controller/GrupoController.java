@@ -59,7 +59,6 @@ public class GrupoController {
 
             Grupo grupo = new Grupo();
             grupo.setNombre(request.getNombre());
-            grupo.setCodigoInvitacion(request.getCodigoInvitacion());
 
             Grupo grupoGuardado = grupoService.guardar(grupo);
 

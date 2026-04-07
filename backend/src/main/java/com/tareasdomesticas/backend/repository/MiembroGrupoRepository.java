@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface MiembroGrupoRepository extends JpaRepository<MiembroGrupo, Long> {
 
-    Optional<MiembroGrupo> findByUsuarioId(Long usuarioId);
+    Optional<MiembroGrupo> findByUsuarioIdUsuario(Long idUsuario);
 }

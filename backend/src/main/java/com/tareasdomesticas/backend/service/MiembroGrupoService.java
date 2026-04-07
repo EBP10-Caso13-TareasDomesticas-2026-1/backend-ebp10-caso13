@@ -29,6 +29,6 @@ public class MiembroGrupoService {
     }
 
     public boolean usuarioYaPerteneceAGrupo(Long usuarioId) {
-        return miembroGrupoRepository.findByUsuarioId(usuarioId).isPresent();
+        return miembroGrupoRepository.findByUsuarioIdUsuario(usuarioId).isPresent();
     }
 }

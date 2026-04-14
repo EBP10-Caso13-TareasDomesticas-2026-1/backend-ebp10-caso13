@@ -60,7 +60,7 @@ public class GrupoController {
             Grupo grupo = new Grupo();
             grupo.setNombre(request.getNombre());
 
-            Grupo grupoGuardado = grupoService.guardar(grupo);
+            Grupo grupoGuardado = grupoService.crearGrupo(grupo);
 
             MiembroGrupo miembroGrupo = new MiembroGrupo();
             miembroGrupo.setUsuario(usuario);

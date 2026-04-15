@@ -86,8 +86,8 @@ Asegúrate de tener instalado:
 
 - [JDK 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
 - [IntelliJ IDEA](https://www.jetbrains.com/idea/download/)
-- [PostgreSQL 17](https://www.postgresql.org/download/) + pgAdmin 4
 - [Git](https://git-scm.com/downloads)
+- Acceso al proyecto de Supabase (PostgreSQL en la nube)
 
 ### 2. Clonar el repositorio
 
@@ -98,35 +98,26 @@ git clone https://github.com/EBP10-Caso13-TareasDomesticas-2026-1/backend-ebp10-
 cd backend-ebp10-caso13
 ```
 
-### 3. Crear la base de datos
+### 3. Configurar variables de entorno (Supabase)
 
-Abre **pgAdmin 4** (o la terminal de PostgreSQL) y crea la base de datos:
+El proyecto ya no usa PostgreSQL local. La conexión se define por variables de entorno en `backend/.env`.
 
-```sql
-CREATE DATABASE tareas_domesticas;
-```
-
-Luego ejecuta el script del Sprint 1 sobre esa base:
-
-```
-Archivo: Sprint_1.sql (en la raíz del repositorio)
-```
-
-Puedes hacerlo desde pgAdmin: clic derecho sobre `tareas_domesticas` → **Query Tool** → abrir el archivo y ejecutar.
-
-### 4. Configurar la conexión en Spring Boot
-
-Abre el archivo `backend/src/main/resources/application.properties` y ajusta con tus credenciales locales de PostgreSQL:
+1. Entra a la carpeta `backend/`
+2. Copia `backend/.env.example` como `backend/.env`
+3. Completa (o valida) los valores de Supabase:
 
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/tareas_domesticas
-spring.datasource.username=postgres
-spring.datasource.password=TU_CONTRASEÑA_AQUÍ
-spring.jpa.hibernate.ddl-auto=none
-spring.jpa.show-sql=true
+SUPABASE_DB_URL=jdbc:postgresql://aws-1-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require
+SUPABASE_DB_USERNAME=postgres.jndjfhgnulmtxdmxmjzm
+SUPABASE_DB_PASSWORD=TU_PASSWORD_SUPABASE
 ```
 
->  Reemplaza `TU_CONTRASEÑA_AQUÍ` con la contraseña que configuraste al instalar PostgreSQL. No subas este archivo con tu contraseña real al repositorio.
+La aplicación carga este archivo automáticamente y aplica SSL (`sslmode=require`) para la conexión remota.
+
+### 4. Base de datos
+
+La estructura de tablas y relaciones se mantiene exactamente igual al Sprint 1.
+Si necesitas recrearla en otro entorno, usa `Sprint_1.sql` desde el editor SQL de Supabase.
 
 ### 5. Abrir y ejecutar el proyecto en IntelliJ
 

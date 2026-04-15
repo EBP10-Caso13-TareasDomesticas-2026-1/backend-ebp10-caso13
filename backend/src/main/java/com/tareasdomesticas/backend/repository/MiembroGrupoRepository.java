@@ -1,11 +1,14 @@
 package com.tareasdomesticas.backend.repository;
 
-import com.tareasdomesticas.backend.entity.MiembroGrupo;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.tareasdomesticas.backend.entity.MiembroGrupo;
 
 public interface MiembroGrupoRepository extends JpaRepository<MiembroGrupo, Long> {
 
     Optional<MiembroGrupo> findByUsuarioIdUsuario(Long idUsuario);
+
+    Optional<MiembroGrupo> findByUsuarioIdUsuarioAndGrupoIdGrupo(Long idUsuario, Long idGrupo);
 }

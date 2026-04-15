@@ -68,7 +68,7 @@ public class MiembroGrupoController {
 
             MiembroGrupo miembroGuardado = miembroGrupoService.guardar(miembroGrupo);
 
-            return ResponseEntity.ok(miembroGuardado);
+            return ResponseEntity.status(HttpStatus.CREATED).body(miembroGuardado);
 
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();

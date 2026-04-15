@@ -1,5 +1,6 @@
 package com.tareasdomesticas.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -19,9 +20,11 @@ public class Usuario {
     private String correo;
 
     @Column(name = "contrasena_hash", nullable = false, length = 255)
+    @JsonIgnore
     private String contrasenaHash;
 
     @Column(name = "pin_seguridad_hash", nullable = false, length = 255)
+    @JsonIgnore
     private String pinSeguridadHash;
 
     @Column(name = "creado_en", nullable = false)

@@ -1,110 +1,113 @@
 # backend-ebp10-caso13
 
-Backend del **Sistema de Organización de Tareas Domésticas** (Caso 13), desarrollado con **Java + Spring Boot** y **PostgreSQL** por el equipo **EBP10 de CodeF@ctory**.
+Backend del Sistema de Organizacion de Tareas Domesticas (Caso 13), desarrollado con Java + Spring Boot.
+
+![Java](https://img.shields.io/badge/Java-17-007396?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.4-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+![JPA](https://img.shields.io/badge/Spring_Data_JPA-Hibernate-59666C?style=for-the-badge)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-Build-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-JUnit%20%2B%20MockMvc-25A162?style=for-the-badge)
 
 ---
 
-## Heramientas y lenguajes:
+## Stack Tecnologico (Shields.io Badges)
 
-| Herramienta | Versión |
+| Tecnologia | Uso |
 |---|---|
-| IDE | IntelliJ IDEA |
-| Lenguaje | Java |
-| JDK | 17 |
-| Build tool | Maven |
-| Framework | Spring Boot 4.0.4 |
-| Base de datos | PostgreSQL 17.9 |
-| Gestor BD visual | pgAdmin 4 |
-| Control de versiones | Git + GitHub |
-
-**Dependencias principales:** Spring Web · Spring Data JPA · PostgreSQL Driver
-
----
-
-## Estructura del proyecto
-
-```
-backend/
-├── entity/       → Entidades JPA (tablas de la BD)
-├── repository/   → Acceso a datos con JpaRepository
-├── service/      → Lógica de negocio
-├── controller/   → Endpoints REST
-└── dto/          → Objetos de transferencia de datos
-```
+| ![Java](https://img.shields.io/badge/Java-17-007396?logo=openjdk&logoColor=white) | Lenguaje principal |
+| ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.4-6DB33F?logo=springboot&logoColor=white) | Framework backend |
+| ![JPA](https://img.shields.io/badge/Spring_Data_JPA-Hibernate-59666C) | ORM y acceso a datos |
+| ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-336791?logo=postgresql&logoColor=white) | Base de datos principal |
+| ![Security](https://img.shields.io/badge/Spring_Security-Crypto-6DB33F?logo=springsecurity&logoColor=white) | Hash de contrasenas y PIN |
+| ![Testing](https://img.shields.io/badge/Testing-JUnit%20%2B%20MockMvc-25A162) | Testing |
+| ![H2](https://img.shields.io/badge/H2-InMemory-1A73E8) | Base de datos para pruebas |
+| ![Maven](https://img.shields.io/badge/Maven-Build-C71A36?logo=apachemaven&logoColor=white) | Build y dependencias |
+| ![Git](https://img.shields.io/badge/Git-GitHub-F05032?logo=git&logoColor=white) | Control de versiones |
 
 ---
 
-## Base de datos — Sprint 1
+## Arquitectura
 
-**Base de datos principal:** `tareas_domesticas`
-**Base de prueba:** `tareas_domesticas_test`
+Proyecto monolitico por capas:
 
-**Tablas creadas:**
-
-| Tabla | Propósito |
-|---|---|
-| `roles` | Roles del sistema: ADMINISTRADOR y MIEMBRO |
-| `usuarios` | Datos de registro: nombre, correo, contraseña (hash), pin (hash) |
-| `grupos` | Grupos familiares con código de invitación |
-| `miembros_grupo` | Relación usuario ↔ grupo ↔ rol |
-| `sesiones` | Control de inicio/cierre de sesión con token |
-
-El script de creación limpio está en [`Sprint_1.sql`](./Sprint_1.sql) e incluye tablas, llaves primarias, foráneas, restricciones UNIQUE y carga inicial de roles.
-
----
-
-## Endpoints disponibles (verificación)
-
-```
-GET /usuarios
-GET /grupos
-GET /roles
-GET /miembros-grupo
-GET /sesiones
+```text
+backend/src/main/java/com/tareasdomesticas/backend/
+├── controller   -> Endpoints REST
+├── service      -> Logica de negocio
+├── repository   -> Acceso a datos (JpaRepository)
+├── entity       -> Entidades JPA
+├── dto          -> Contratos request/response
+├── config       -> Configuracion (ej. password encoder)
+└── exception    -> Manejo global de excepciones
 ```
 
-> Estos endpoints validan que la conexión entre Spring Boot y PostgreSQL funcione correctamente.
+---
+
+## Estado Funcional Actual
+
+Actualmente el backend incluye:
+
+- Registro de usuario
+- Inicio de sesion con token
+- Cierre de sesion
+- Creacion de grupo
+- Union a grupo por codigo de invitacion
+- Creacion de tarea por administrador de grupo
+- Validaciones de negocio y de request (Bean Validation)
 
 ---
 
-## Estado actual — Sprint 1
+## Base de Datos
 
-- [x] Estructura del backend en capas
-- [x] Base de datos funcional con script validado
-- [x] Conexión Spring Boot ↔ PostgreSQL
-- [x] Entidades JPA, Repositories y Services base
-- [x] Endpoints GET de verificación funcionando
-- [ ] **Próximo:** Implementar historia de registro de usuario (DTO `RegistroUsuarioRequest` ya creado)
+### Produccion / Desarrollo remoto
+
+- Motor: PostgreSQL en Supabase
+- Configuracion en `backend/.env`
+- SSL habilitado (`sslmode=require`)
+
+### Scripts SQL del proyecto
+
+Ejecuta en este orden:
+
+1. `Sprint_1.sql`
+2. `Sprint_2.sql`
+
+### Tablas principales
+
+- `roles`
+- `usuarios`
+- `grupos`
+- `miembros_grupo`
+- `sesiones`
+- `tareas`
 
 ---
 
-## Clonar y configurar el proyecto en tu máquina
+## Configuracion Inicial Del Proyecto
 
-### 1. Requisitos previos
+### 1) Requisitos
 
-Asegúrate de tener instalado:
+- JDK 17
+- Git
+- Acceso a Supabase (proyecto y credenciales)
 
-- [JDK 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
-- [IntelliJ IDEA](https://www.jetbrains.com/idea/download/)
-- [Git](https://git-scm.com/downloads)
-- Acceso al proyecto de Supabase (PostgreSQL en la nube)
-
-### 2. Clonar el repositorio
-
-Abre una terminal y ejecuta:
+### 2) Clonar
 
 ```bash
 git clone https://github.com/EBP10-Caso13-TareasDomesticas-2026-1/backend-ebp10-caso13.git
 cd backend-ebp10-caso13
 ```
 
-### 3. Configurar variables de entorno (Supabase)
+### 3) Variables de entorno
 
-El proyecto ya no usa PostgreSQL local. La conexión se define por variables de entorno en `backend/.env`.
+Desde la raiz del repo:
 
-1. Entra a la carpeta `backend/`
-2. Copia `backend/.env.example` como `backend/.env`
-3. Completa (o valida) los valores de Supabase:
+```bash
+copy backend\.env.example backend\.env
+```
+
+Luego completa `backend/.env`:
 
 ```properties
 SUPABASE_DB_URL=jdbc:postgresql://aws-1-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require
@@ -112,35 +115,135 @@ SUPABASE_DB_USERNAME=postgres.jndjfhgnulmtxdmxmjzm
 SUPABASE_DB_PASSWORD=TU_PASSWORD_SUPABASE
 ```
 
-La aplicación carga este archivo automáticamente y aplica SSL (`sslmode=require`) para la conexión remota.
+> Nota: no subas `backend/.env` al repositorio.
 
-### 4. Base de datos
+### 4) Crear estructura en la BD
 
-La estructura de tablas y relaciones se mantiene exactamente igual al Sprint 1.
-Si necesitas recrearla en otro entorno, usa `Sprint_1.sql` desde el editor SQL de Supabase.
+Ejecuta en Supabase SQL Editor:
 
-### 5. Abrir y ejecutar el proyecto en IntelliJ
-
-1. Abre IntelliJ IDEA → **File > Open** → selecciona la carpeta `backend/`
-2. Espera a que Maven descargue las dependencias automáticamente
-3. Busca la clase principal `BackendApplication.java` y ejecútala con el botón ▶️
-4. Verifica en el navegador o Postman que el backend responde en `http://localhost:8080`
-
-### 6. Verificar que todo funciona
-
-Prueba uno de los endpoints en tu navegador o Postman:
-
-```
-GET http://localhost:8080/roles
-```
-
-Si ves la lista de roles, el backend está funcionando correctamente. 
+1. `Sprint_1.sql`
+2. `Sprint_2.sql`
 
 ---
 
+## Ejecutar La Aplicacion
+
+Desde `backend/`:
+
+```bash
+./mvnw spring-boot:run
+```
+
+En Windows PowerShell tambien puedes usar:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+La app queda en:
+
+- `http://localhost:8080`
+
+---
+
+## Ejecutar Pruebas
+
+Las pruebas usan H2 en memoria con esta configuracion:
+
+- `backend/src/test/resources/application.properties`
+- `spring.jpa.hibernate.ddl-auto=create-drop`
+
+### Todas las pruebas
+
+```bash
+./mvnw test
+```
+
+### Solo una clase de prueba
+
+```bash
+./mvnw -Dtest=TareaE2ETest test
+```
+
+### Tipos de pruebas actuales
+
+- `TareasDomesticasBackendApplicationTests` (carga de contexto)
+- `TareaServiceTest` (unitarias de servicio)
+- `TareaControllerIntegrationTest` (integracion HTTP de controlador)
+- `TareaE2ETest` (flujo end-to-end completo)
+
+---
+
+## Endpoints Disponibles
+
+### Usuarios
+
+- `GET /usuarios`
+- `POST /usuarios/registro`
+- `POST /usuarios/login`
+
+### Grupos
+
+- `GET /grupos`
+- `POST /grupos`
+
+### Miembros de grupo
+
+- `GET /miembros-grupo`
+- `POST /miembros-grupo`
+
+### Roles
+
+- `GET /roles`
+
+### Sesiones
+
+- `GET /sesiones`
+- `POST /sesiones/logout`
+
+### Tareas
+
+- `POST /tareas`
+
+---
+
+## Flujo E2E Implementado
+
+El flujo principal validado en pruebas:
+
+1. Registro de administrador
+2. Login de administrador
+3. Creacion de grupo
+4. Registro de segundo usuario
+5. Union del segundo usuario al grupo
+6. Creacion de tarea asignada al segundo usuario
+
+Validaciones incluidas en el flujo:
+
+- Token Bearer en Authorization
+- Usuario asignado pertenece al grupo
+- Estado inicial `PENDIENTE`
+- Prioridad por defecto `MEDIA`
+
+---
+
+## Problemas Comunes Y Soluciones
+
+### Error de conexion a BD
+
+- Verifica `backend/.env`
+- Verifica que corriste `Sprint_1.sql` y `Sprint_2.sql`
+- Verifica acceso de red a Supabase
+
+### Tests fallan por entorno
+
+- Asegura ejecutar desde carpeta `backend/`
+- Reinstala dependencias con `./mvnw clean test`
+
+---
 
 ## Equipo
 
-Desarrollado por el equipo **EBP10 — Análisis 2, CodeF@ctory**.
+Desarrollado por EBP10 - Analisis 2, CodeF@ctory.
 
 

@@ -60,7 +60,7 @@ public class GrupoController {
             Grupo grupo = new Grupo();
             grupo.setNombre(request.getNombre());
 
-            Grupo grupoGuardado = grupoService.guardar(grupo);
+            Grupo grupoGuardado = grupoService.crearGrupo(grupo);
 
             MiembroGrupo miembroGrupo = new MiembroGrupo();
             miembroGrupo.setUsuario(usuario);
@@ -70,7 +70,7 @@ public class GrupoController {
 
             miembroGrupoService.guardar(miembroGrupo);
 
-            return ResponseEntity.ok(grupoGuardado);
+            return ResponseEntity.status(HttpStatus.CREATED).body(grupoGuardado);
 
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();

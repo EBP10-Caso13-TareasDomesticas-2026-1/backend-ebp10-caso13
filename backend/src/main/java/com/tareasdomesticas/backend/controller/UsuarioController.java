@@ -45,7 +45,7 @@ public class UsuarioController {
                     "Usuario registrado correctamente"
             );
 
-            return ResponseEntity.ok(response);
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();

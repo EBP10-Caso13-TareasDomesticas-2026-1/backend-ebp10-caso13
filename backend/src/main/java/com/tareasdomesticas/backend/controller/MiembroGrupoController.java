@@ -45,13 +45,13 @@ public class MiembroGrupoController {
     @PostMapping
     public ResponseEntity<?> unirseAGrupo(@RequestBody UnirseGrupoRequest request) {
         try {
-            if (miembroGrupoService.usuarioYaPerteneceAGrupo(request.getUsuarioId())) {
+            if (miembroGrupoService.usuarioYaPerteneceAGrupo(request.getIdUsuario())) {
                 Map<String, String> error = new HashMap<>();
                 error.put("mensaje", "El usuario ya pertenece a un grupo");
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
             }
 
-            Usuario usuario = usuarioService.buscarPorId(request.getUsuarioId())
+            Usuario usuario = usuarioService.buscarPorId(request.getIdUsuario())
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
             Grupo grupo = grupoService.buscarPorCodigoInvitacion(request.getCodigoInvitacion())
@@ -68,7 +68,7 @@ public class MiembroGrupoController {
 
             MiembroGrupo miembroGuardado = miembroGrupoService.guardar(miembroGrupo);
 
-            return ResponseEntity.ok(miembroGuardado);
+            return ResponseEntity.status(HttpStatus.CREATED).body(miembroGuardado);
 
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();

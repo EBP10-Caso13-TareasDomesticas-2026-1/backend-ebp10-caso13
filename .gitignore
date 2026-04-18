@@ -37,3 +37,8 @@ build/
 .env
 .env.*
 !.env.example
+
+### Environment secrets ###
+.env
+.history
+backend/.env

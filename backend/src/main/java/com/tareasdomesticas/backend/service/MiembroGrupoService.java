@@ -53,6 +53,14 @@ public class MiembroGrupoService {
         return miembroGrupoRepository.findByUsuarioIdUsuario(usuarioId).isPresent();
     }
 
+    public boolean esAdminDelGrupo(Long usuarioId, Long grupoId) {
+        Optional<MiembroGrupo> miembro = miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioId, grupoId);
+        if (miembro.isPresent()) {
+            return "ADMINISTRADOR".equals(miembro.get().getRol().getNombre());
+        }
+        return false;
+    }
+
     @Transactional
     public UnirseGrupoResponse unirseAGrupo(String authorizationHeader, UnirseGrupoRequest request) {
         Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);

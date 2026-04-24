@@ -1,5 +1,6 @@
 package com.tareasdomesticas.backend.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.repository.GrupoRepository;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class GrupoService {
     public Grupo guardar(Grupo grupo) {
         return grupoRepository.save(grupo);
     }
-
+    @Transactional
     public Grupo crearGrupo(Grupo grupo) {
         if (grupo.getCodigoInvitacion() == null || grupo.getCodigoInvitacion().isBlank()) {
             grupo.setCodigoInvitacion(generarCodigoInvitacionUnica());
@@ -52,6 +53,10 @@ public class GrupoService {
             codigo = generarCodigoInvitacion();
         } while (grupoRepository.findByCodigoInvitacion(codigo).isPresent());
         return codigo;
+    }
+
+    public String generarCodigoInterno() {
+        return generarCodigoInvitacionUnica();
     }
 
     private String generarCodigoInvitacion() {

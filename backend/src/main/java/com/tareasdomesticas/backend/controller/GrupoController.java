@@ -1,6 +1,7 @@
 package com.tareasdomesticas.backend.controller;
 
 import com.tareasdomesticas.backend.dto.CrearGrupoRequest;
+import com.tareasdomesticas.backend.dto.GrupoResponse;
 import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.entity.MiembroGrupo;
 import com.tareasdomesticas.backend.entity.Role;
@@ -38,11 +39,17 @@ public class GrupoController {
     }
 
     @GetMapping
-    public List<Grupo> listarGrupos() {
-        return grupoService.listarTodos();
-    }
+    public List<GrupoResponse> listarGrupos() {
+        List<Grupo> grupos = grupoService.listarTodos();
 
-    @PostMapping
+        return grupos.stream()
+                .map(grupo -> new GrupoResponse(
+                        grupo.getIdGrupo(),
+                        grupo.getNombre(),
+                        null //  miembro NO ve código aquí
+                ))
+                .toList();
+    }
     public ResponseEntity<?> crearGrupo(@RequestBody CrearGrupoRequest request) {
         try {
             if (miembroGrupoService.usuarioYaPerteneceAGrupo(request.getIdUsuario())) {
@@ -69,13 +76,37 @@ public class GrupoController {
             miembroGrupo.setFechaUnion(LocalDateTime.now());
 
             miembroGrupoService.guardar(miembroGrupo);
+            GrupoResponse response = new GrupoResponse(
+            grupoGuardado.getIdGrupo(),
+            grupoGuardado.getNombre(),
+            grupoGuardado.getCodigoInvitacion() // aquí sí lo ve el admin creador
+            );
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(grupoGuardado);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
             error.put("mensaje", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
+    }
+
+    @GetMapping("/{id}/codigo-invitacion")
+    public ResponseEntity<String> obtenerCodigo(@PathVariable Long id) {
+        Grupo grupo = grupoService.buscarPorId(id)
+                .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+
+        return ResponseEntity.ok(grupo.getCodigoInvitacion());
+    }
+
+    @PatchMapping("/{id}/codigo-invitacion")
+    public ResponseEntity<Grupo> regenerarCodigo(@PathVariable Long id) {
+        Grupo grupo = grupoService.buscarPorId(id)
+                .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+
+        grupo.setCodigoInvitacion(grupoService.generarCodigoInterno());
+        Grupo actualizado = grupoService.guardar(grupo);
+
+        return ResponseEntity.ok(actualizado);
     }
 }

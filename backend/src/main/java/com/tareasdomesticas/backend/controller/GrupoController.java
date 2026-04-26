@@ -6,9 +6,11 @@ import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.entity.MiembroGrupo;
 import com.tareasdomesticas.backend.entity.Role;
 import com.tareasdomesticas.backend.entity.Usuario;
+import com.tareasdomesticas.backend.exception.ApiException;
 import com.tareasdomesticas.backend.service.GrupoService;
 import com.tareasdomesticas.backend.service.MiembroGrupoService;
 import com.tareasdomesticas.backend.service.RoleService;
+import com.tareasdomesticas.backend.service.SesionService;
 import com.tareasdomesticas.backend.service.UsuarioService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,15 +29,18 @@ public class GrupoController {
     private final MiembroGrupoService miembroGrupoService;
     private final UsuarioService usuarioService;
     private final RoleService roleService;
+    private final SesionService sesionService;
 
     public GrupoController(GrupoService grupoService,
                            MiembroGrupoService miembroGrupoService,
                            UsuarioService usuarioService,
-                           RoleService roleService) {
+                           RoleService roleService,
+                           SesionService sesionService) {
         this.grupoService = grupoService;
         this.miembroGrupoService = miembroGrupoService;
         this.usuarioService = usuarioService;
         this.roleService = roleService;
+        this.sesionService = sesionService;
     }
 
     @GetMapping
@@ -50,6 +55,7 @@ public class GrupoController {
                 ))
                 .toList();
     }
+    @PostMapping
     public ResponseEntity<?> crearGrupo(@RequestBody CrearGrupoRequest request) {
         try {
             if (miembroGrupoService.usuarioYaPerteneceAGrupo(request.getIdUsuario())) {
@@ -92,17 +98,33 @@ public class GrupoController {
     }
 
     @GetMapping("/{id}/codigo-invitacion")
-    public ResponseEntity<String> obtenerCodigo(@PathVariable Long id) {
+    public ResponseEntity<String> obtenerCodigo(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable Long id) {
+        Usuario usuario = sesionService.obtenerUsuarioAutenticado(authorization);
+
         Grupo grupo = grupoService.buscarPorId(id)
-                .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Grupo no encontrado"));
+
+        if (!miembroGrupoService.esAdminDelGrupo(usuario.getIdUsuario(), id)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo el administrador puede ver el codigo");
+        }
 
         return ResponseEntity.ok(grupo.getCodigoInvitacion());
     }
 
     @PatchMapping("/{id}/codigo-invitacion")
-    public ResponseEntity<Grupo> regenerarCodigo(@PathVariable Long id) {
+    public ResponseEntity<Grupo> regenerarCodigo(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable Long id) {
+        Usuario usuario = sesionService.obtenerUsuarioAutenticado(authorization);
+
         Grupo grupo = grupoService.buscarPorId(id)
-                .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Grupo no encontrado"));
+
+        if (!miembroGrupoService.esAdminDelGrupo(usuario.getIdUsuario(), id)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo el administrador puede regenerar el codigo");
+        }
 
         grupo.setCodigoInvitacion(grupoService.generarCodigoInterno());
         Grupo actualizado = grupoService.guardar(grupo);

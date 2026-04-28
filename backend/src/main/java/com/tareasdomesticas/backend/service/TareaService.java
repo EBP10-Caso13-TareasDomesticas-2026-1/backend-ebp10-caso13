@@ -1,7 +1,10 @@
 package com.tareasdomesticas.backend.service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,6 +15,7 @@ import com.tareasdomesticas.backend.dto.CambiarEstadoTareaRequest;
 import com.tareasdomesticas.backend.dto.CambiarEstadoTareaResponse;
 import com.tareasdomesticas.backend.dto.CrearTareaRequest;
 import com.tareasdomesticas.backend.dto.CrearTareaResponse;
+import com.tareasdomesticas.backend.dto.TareaTableroResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
 import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.entity.MiembroGrupo;
@@ -39,6 +43,38 @@ public class TareaService {
         this.sesionService = sesionService;
     }
 
+    // ===============================
+    // 🧩 TABLERO (ESCENARIOS 1,2,3,4)
+    // ===============================
+    @Transactional(readOnly = true)
+    public Map<EstadoTarea, List<TareaTableroResponse>> obtenerTablero(String authorizationHeader) {
+
+        Usuario usuario = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        MiembroGrupo miembro = miembroGrupoRepository
+                .findByUsuarioIdUsuario(usuario.getIdUsuario())
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "No pertenece a un grupo"));
+
+        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupo(
+                miembro.getGrupo().getIdGrupo()
+        );
+
+        return tareas.stream()
+                .sorted(Comparator.comparing(Tarea::getFechaLimite))
+                .map(t -> new TareaTableroResponse(
+                        t.getIdTarea(),
+                        t.getNombre(),
+                        t.getUsuarioAsignado().getNombre(),
+                        t.getEstado(),
+                        t.getFechaLimite(),
+                        t.getEstado() == EstadoTarea.VENCIDA
+                ))
+                .collect(Collectors.groupingBy(TareaTableroResponse::getEstado));
+    }
+
+    // ===============================
+    // 🧩 CREAR TAREA
+    // ===============================
     @Transactional
     public CrearTareaResponse crearTarea(String authorizationHeader, CrearTareaRequest request) {
         Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
@@ -89,6 +125,9 @@ public class TareaService {
         );
     }
 
+    // ===============================
+    // 🧩 CAMBIAR ESTADO
+    // ===============================
     @Transactional
     public CambiarEstadoTareaResponse cambiarEstado(String authorizationHeader, Long idTarea, CambiarEstadoTareaRequest request) {
         Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
@@ -144,6 +183,9 @@ public class TareaService {
         return construirCambioEstadoResponse(tareaGuardada, puntosSumados, puntosTotales, "Estado de tarea actualizado correctamente");
     }
 
+    // ===============================
+    // 🧩 TAREAS VENCIDAS AUTOMÁTICAS
+    // ===============================
     @Transactional
     @Scheduled(fixedRate = 60000)
     public void marcarTareasVencidas() {

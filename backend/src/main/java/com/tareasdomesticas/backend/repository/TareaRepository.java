@@ -11,4 +11,5 @@ import com.tareasdomesticas.backend.entity.Tarea;
 public interface TareaRepository extends JpaRepository<Tarea, Long> {
 
     List<Tarea> findByEstadoInAndFechaLimiteBefore(List<EstadoTarea> estados, LocalDateTime fechaLimite);
+    List<Tarea> findByGrupoIdGrupo(Long idGrupo);
 }

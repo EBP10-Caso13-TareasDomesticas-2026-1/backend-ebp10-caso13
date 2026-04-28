@@ -3,11 +3,14 @@ package com.tareasdomesticas.backend.service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tareasdomesticas.backend.dto.GrupoLoginResponse;
+import com.tareasdomesticas.backend.dto.MiembroGrupoResponse;
 import com.tareasdomesticas.backend.dto.UnirseGrupoRequest;
 import com.tareasdomesticas.backend.dto.UnirseGrupoResponse;
 import com.tareasdomesticas.backend.entity.Grupo;
@@ -59,6 +62,29 @@ public class MiembroGrupoService {
             return "ADMINISTRADOR".equals(miembro.get().getRol().getNombre());
         }
         return false;
+    }
+
+    public Optional<GrupoLoginResponse> obtenerGrupoLoginPorUsuario(Long idUsuario) {
+        return miembroGrupoRepository.findByUsuarioIdUsuario(idUsuario)
+                .map(miembro -> {
+                    Grupo grupo = miembro.getGrupo();
+                    List<MiembroGrupoResponse> miembros = miembroGrupoRepository.findByGrupoIdGrupo(grupo.getIdGrupo())
+                            .stream()
+                            .map(item -> new MiembroGrupoResponse(
+                                    item.getUsuario().getIdUsuario(),
+                                    item.getUsuario().getNombre(),
+                                    item.getUsuario().getCorreo(),
+                                    item.getRol().getNombre()
+                            ))
+                            .collect(Collectors.toList());
+
+                    return new GrupoLoginResponse(
+                            grupo.getIdGrupo(),
+                            grupo.getNombre(),
+                            grupo.getCodigoInvitacion(),
+                            miembros
+                    );
+                });
     }
 
     @Transactional

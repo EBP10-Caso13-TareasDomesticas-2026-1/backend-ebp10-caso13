@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-    name = "miembros_grupo",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"id_usuario", "id_grupo"})
+        name = "miembros_grupo",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"id_usuario", "id_grupo"})
 )
 public class MiembroGrupo {
 
@@ -29,6 +29,9 @@ public class MiembroGrupo {
 
     @Column(name = "fecha_union", nullable = false)
     private LocalDateTime fechaUnion;
+
+    @Column(name = "puntos", nullable = false)
+    private Integer puntos = 0;
 
     public MiembroGrupo() {
     }
@@ -79,5 +82,13 @@ public class MiembroGrupo {
 
     public void setFechaUnion(LocalDateTime fechaUnion) {
         this.fechaUnion = fechaUnion;
+    }
+
+    public Integer getPuntos() {
+        return puntos;
+    }
+
+    public void setPuntos(Integer puntos) {
+        this.puntos = puntos;
     }
 }

@@ -1,11 +1,15 @@
 package com.tareasdomesticas.backend.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tareasdomesticas.backend.dto.CambiarEstadoTareaRequest;
+import com.tareasdomesticas.backend.dto.CambiarEstadoTareaResponse;
 import com.tareasdomesticas.backend.dto.CrearTareaRequest;
 import com.tareasdomesticas.backend.dto.CrearTareaResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
@@ -67,6 +71,7 @@ public class TareaService {
         tarea.setEstado(EstadoTarea.PENDIENTE);
         tarea.setFechaLimite(request.getFechaLimite());
         tarea.setFechaCreacion(LocalDateTime.now());
+        tarea.setFechaCambioEstado(null);
 
         Tarea tareaGuardada = tareaRepository.save(tarea);
 
@@ -81,6 +86,136 @@ public class TareaService {
                 tareaGuardada.getGrupo().getIdGrupo(),
                 tareaGuardada.getUsuarioAsignado().getIdUsuario(),
                 "Tarea creada correctamente"
+        );
+    }
+
+    @Transactional
+    public CambiarEstadoTareaResponse cambiarEstado(String authorizationHeader, Long idTarea, CambiarEstadoTareaRequest request) {
+        Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+        Tarea tarea = tareaRepository.findById(idTarea)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
+
+        evaluarVencimiento(tarea);
+
+        MiembroGrupo miembroAutenticado = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), tarea.getGrupo().getIdGrupo())
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "El usuario no pertenece al grupo de la tarea"));
+
+        boolean esAdministrador = ROL_ADMINISTRADOR.equalsIgnoreCase(miembroAutenticado.getRol().getNombre());
+        boolean esUsuarioAsignado = tarea.getUsuarioAsignado().getIdUsuario().equals(usuarioAutenticado.getIdUsuario());
+        EstadoTarea estadoActual = tarea.getEstado();
+        EstadoTarea nuevoEstado = request.getEstado();
+
+        if (!esAdministrador && !esUsuarioAsignado) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "No tiene permiso para cambiar el estado de una tarea no asignada");
+        }
+
+        if (!esAdministrador) {
+            validarCambioMiembro(estadoActual, nuevoEstado);
+        }
+
+        LocalDateTime fechaCambio = LocalDateTime.now();
+        tarea.setEstado(nuevoEstado);
+        tarea.setFechaCambioEstado(fechaCambio);
+
+        Integer puntosSumados = 0;
+        Integer puntosTotales = null;
+
+        if (nuevoEstado == EstadoTarea.COMPLETADA && estadoActual != EstadoTarea.COMPLETADA) {
+            MiembroGrupo miembroAsignado = miembroGrupoRepository
+                    .findByUsuarioIdUsuarioAndGrupoIdGrupo(tarea.getUsuarioAsignado().getIdUsuario(), tarea.getGrupo().getIdGrupo())
+                    .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "El usuario asignado no pertenece al grupo"));
+
+            puntosSumados = calcularPuntos(tarea.getPrioridad());
+            int puntosActuales = miembroAsignado.getPuntos() != null ? miembroAsignado.getPuntos() : 0;
+            miembroAsignado.setPuntos(puntosActuales + puntosSumados);
+            miembroGrupoRepository.save(miembroAsignado);
+            puntosTotales = miembroAsignado.getPuntos();
+        } else {
+            MiembroGrupo miembroAsignado = miembroGrupoRepository
+                    .findByUsuarioIdUsuarioAndGrupoIdGrupo(tarea.getUsuarioAsignado().getIdUsuario(), tarea.getGrupo().getIdGrupo())
+                    .orElse(null);
+            if (miembroAsignado != null) {
+                puntosTotales = miembroAsignado.getPuntos();
+            }
+        }
+
+        Tarea tareaGuardada = tareaRepository.save(tarea);
+        return construirCambioEstadoResponse(tareaGuardada, puntosSumados, puntosTotales, "Estado de tarea actualizado correctamente");
+    }
+
+    @Transactional
+    @Scheduled(fixedRate = 60000)
+    public void marcarTareasVencidas() {
+        List<Tarea> tareasVencidas = tareaRepository.findByEstadoInAndFechaLimiteBefore(
+                List.of(EstadoTarea.PENDIENTE, EstadoTarea.EN_PROGRESO),
+                LocalDateTime.now()
+        );
+
+        LocalDateTime fechaCambio = LocalDateTime.now();
+        for (Tarea tarea : tareasVencidas) {
+            tarea.setEstado(EstadoTarea.VENCIDA);
+            tarea.setFechaCambioEstado(fechaCambio);
+        }
+        tareaRepository.saveAll(tareasVencidas);
+    }
+
+    private void evaluarVencimiento(Tarea tarea) {
+        if ((tarea.getEstado() == EstadoTarea.PENDIENTE || tarea.getEstado() == EstadoTarea.EN_PROGRESO)
+                && tarea.getFechaLimite().isBefore(LocalDateTime.now())) {
+            tarea.setEstado(EstadoTarea.VENCIDA);
+            tarea.setFechaCambioEstado(LocalDateTime.now());
+            tareaRepository.save(tarea);
+        }
+    }
+
+    private void validarCambioMiembro(EstadoTarea estadoActual, EstadoTarea nuevoEstado) {
+        if (estadoActual == EstadoTarea.VENCIDA) {
+            throw new ApiException(HttpStatus.FORBIDDEN,
+                    "Esta tarea ha vencido. Solo el administrador puede reabrirla.");
+        }
+
+        if (estadoActual == EstadoTarea.COMPLETADA) {
+            throw new ApiException(HttpStatus.FORBIDDEN,
+                    "No se puede revertir una tarea que ya fue completada");
+        }
+
+        if (estadoActual == EstadoTarea.PENDIENTE
+                && (nuevoEstado == EstadoTarea.EN_PROGRESO || nuevoEstado == EstadoTarea.COMPLETADA)) {
+            return;
+        }
+
+        if (estadoActual == EstadoTarea.EN_PROGRESO && nuevoEstado == EstadoTarea.COMPLETADA) {
+            return;
+        }
+
+        throw new ApiException(HttpStatus.BAD_REQUEST, "Cambio de estado no permitido");
+    }
+
+    private Integer calcularPuntos(PrioridadTarea prioridad) {
+        if (prioridad == PrioridadTarea.ALTA) {
+            return 15;
+        }
+        if (prioridad == PrioridadTarea.MEDIA) {
+            return 10;
+        }
+        return 5;
+    }
+
+    private CambiarEstadoTareaResponse construirCambioEstadoResponse(Tarea tarea, Integer puntosSumados,
+                                                                     Integer puntosTotales, String mensaje) {
+        return new CambiarEstadoTareaResponse(
+                tarea.getIdTarea(),
+                tarea.getNombre(),
+                tarea.getPrioridad(),
+                tarea.getEstado(),
+                tarea.getFechaLimite(),
+                tarea.getFechaCambioEstado(),
+                tarea.getGrupo().getIdGrupo(),
+                tarea.getUsuarioAsignado().getIdUsuario(),
+                puntosSumados,
+                puntosTotales,
+                mensaje
         );
     }
 

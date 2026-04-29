@@ -50,6 +50,9 @@ public class Tarea {
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
 
+    @Column(name = "fecha_cambio_estado")
+    private LocalDateTime fechaCambioEstado;
+
     public Tarea() {
     }
 
@@ -137,5 +140,13 @@ public class Tarea {
 
     public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDateTime getFechaCambioEstado() {
+        return fechaCambioEstado;
+    }
+
+    public void setFechaCambioEstado(LocalDateTime fechaCambioEstado) {
+        this.fechaCambioEstado = fechaCambioEstado;
     }
 }

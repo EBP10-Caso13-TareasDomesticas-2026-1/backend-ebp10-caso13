@@ -111,12 +111,15 @@ class TareaE2ETest {
                 objectMapper.readValue(registroMiembroJson, RegistroUsuarioResponse.class);
         assertThat(miembroCreado.getIdUsuario()).isNotNull();
 
-        UnirseGrupoRequest unirseGrupoRequest = new UnirseGrupoRequest(
-                miembroCreado.getIdUsuario(),
-                codigoInvitacion
-        );
+        InicioSesionRequest loginMiembro = new InicioSesionRequest(miembroCorreo, "Miembro1234");
+        String loginMiembroJson = postJson("/usuarios/login", loginMiembro, null, 200);
+        InicioSesionResponse loginMiembroPayload =
+                objectMapper.readValue(loginMiembroJson, InicioSesionResponse.class);
+        String bearerTokenMiembro = "Bearer " + loginMiembroPayload.getToken();
 
-        String unirseGrupoJson = postJson("/miembros-grupo", unirseGrupoRequest, bearerToken, 201);
+        UnirseGrupoRequest unirseGrupoRequest = new UnirseGrupoRequest(codigoInvitacion);
+
+        String unirseGrupoJson = postJson("/miembros-grupo", unirseGrupoRequest, bearerTokenMiembro, 201);
 
         JsonNode miembroGrupoNode = objectMapper.readTree(unirseGrupoJson);
         assertThat(miembroGrupoNode.get("idMiembroGrupo").asLong()).isNotNull();

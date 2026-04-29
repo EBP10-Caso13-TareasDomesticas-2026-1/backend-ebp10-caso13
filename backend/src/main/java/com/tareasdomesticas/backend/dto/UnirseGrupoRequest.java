@@ -1,24 +1,17 @@
 package com.tareasdomesticas.backend.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class UnirseGrupoRequest {
 
-    private Long idUsuario;
+    @NotBlank(message = "El codigo de invitacion es obligatorio")
     private String codigoInvitacion;
 
     public UnirseGrupoRequest() {
     }
 
-    public UnirseGrupoRequest(Long idUsuario, String codigoInvitacion) {
-        this.idUsuario = idUsuario;
+    public UnirseGrupoRequest(String codigoInvitacion) {
         this.codigoInvitacion = codigoInvitacion;
-    }
-
-    public Long getIdUsuario() {
-        return idUsuario;
-    }
-
-    public void setIdUsuario(Long idUsuario) {
-        this.idUsuario = idUsuario;
     }
 
     public String getCodigoInvitacion() {

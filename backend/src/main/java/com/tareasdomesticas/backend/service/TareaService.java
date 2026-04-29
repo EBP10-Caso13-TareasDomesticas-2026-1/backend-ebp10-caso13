@@ -73,6 +73,37 @@ public class TareaService {
     }
 
     // ===============================
+    // 🧩 NUEVO: TABLERO POR ID DE GRUPO (COMPATIBILIDAD FRONT)
+    // ===============================
+    @Transactional(readOnly = true)
+    public Map<EstadoTarea, List<TareaTableroResponse>> obtenerTableroPorGrupo(
+            String authorizationHeader, Long idGrupo) {
+
+        Usuario usuario = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        MiembroGrupo miembro = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuario.getIdUsuario(), idGrupo)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.FORBIDDEN,
+                        "No pertenece a ese grupo"
+                ));
+
+        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupo(idGrupo);
+
+        return tareas.stream()
+                .sorted(Comparator.comparing(Tarea::getFechaLimite))
+                .map(t -> new TareaTableroResponse(
+                        t.getIdTarea(),
+                        t.getNombre(),
+                        t.getUsuarioAsignado().getNombre(),
+                        t.getEstado(),
+                        t.getFechaLimite(),
+                        t.getEstado() == EstadoTarea.VENCIDA
+                ))
+                .collect(Collectors.groupingBy(TareaTableroResponse::getEstado));
+    }
+
+    // ===============================
     // 🧩 CREAR TAREA
     // ===============================
     @Transactional
@@ -202,6 +233,9 @@ public class TareaService {
         tareaRepository.saveAll(tareasVencidas);
     }
 
+    // ===============================
+    // 🔧 MÉTODOS AUXILIARES
+    // ===============================
     private void evaluarVencimiento(Tarea tarea) {
         if ((tarea.getEstado() == EstadoTarea.PENDIENTE || tarea.getEstado() == EstadoTarea.EN_PROGRESO)
                 && tarea.getFechaLimite().isBefore(LocalDateTime.now())) {
@@ -235,12 +269,8 @@ public class TareaService {
     }
 
     private Integer calcularPuntos(PrioridadTarea prioridad) {
-        if (prioridad == PrioridadTarea.ALTA) {
-            return 15;
-        }
-        if (prioridad == PrioridadTarea.MEDIA) {
-            return 10;
-        }
+        if (prioridad == PrioridadTarea.ALTA) return 15;
+        if (prioridad == PrioridadTarea.MEDIA) return 10;
         return 5;
     }
 
@@ -262,11 +292,8 @@ public class TareaService {
     }
 
     private String normalizarDescripcion(String descripcion) {
-        if (descripcion == null) {
-            return null;
-        }
-
-        String descripcionNormalizada = descripcion.trim();
-        return descripcionNormalizada.isEmpty() ? null : descripcionNormalizada;
+        if (descripcion == null) return null;
+        String d = descripcion.trim();
+        return d.isEmpty() ? null : d;
     }
 }

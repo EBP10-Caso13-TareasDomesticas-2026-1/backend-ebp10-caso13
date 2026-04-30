@@ -37,7 +37,6 @@ public class TareaController {
         Map<EstadoTarea, List<TareaTableroResponse>> tablero =
                 tareaService.obtenerTablero(authorization);
 
-        // Escenario 2: sin tareas
         if (tablero.isEmpty()) {
             return ResponseEntity.ok(Map.of(
                     "mensaje", "No hay tareas registradas",
@@ -45,9 +44,33 @@ public class TareaController {
             ));
         }
 
-        // Escenario 1: con tareas
         return ResponseEntity.ok(Map.of(
                 "mensaje", "Tablero cargado correctamente",
+                "tablero", tablero
+        ));
+    }
+
+    // ===============================
+    // 🧩 COMPATIBILIDAD FRONTEND
+    // 👉 /tareas/grupo/{idGrupo}
+    // ===============================
+    @GetMapping("/grupo/{idGrupo}")
+    public ResponseEntity<?> obtenerTableroPorGrupo(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable Long idGrupo) {
+
+        Map<EstadoTarea, List<TareaTableroResponse>> tablero =
+                tareaService.obtenerTableroPorGrupo(authorization, idGrupo);
+
+        if (tablero.isEmpty()) {
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "No hay tareas registradas para este grupo",
+                    "tablero", tablero
+            ));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "mensaje", "Tablero del grupo cargado correctamente",
                 "tablero", tablero
         ));
     }

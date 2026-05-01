@@ -67,7 +67,8 @@ public class TareaService {
                         t.getUsuarioAsignado().getNombre(),
                         t.getEstado(),
                         t.getFechaLimite(),
-                        t.getEstado() == EstadoTarea.VENCIDA
+                        t.getEstado() == EstadoTarea.VENCIDA,
+                        t.getUsuarioAsignado().getIdUsuario()
                 ))
                 .collect(Collectors.groupingBy(TareaTableroResponse::getEstado));
     }
@@ -98,7 +99,8 @@ public class TareaService {
                         t.getUsuarioAsignado().getNombre(),
                         t.getEstado(),
                         t.getFechaLimite(),
-                        t.getEstado() == EstadoTarea.VENCIDA
+                        t.getEstado() == EstadoTarea.VENCIDA,
+                        t.getUsuarioAsignado().getIdUsuario()
                 ))
                 .collect(Collectors.groupingBy(TareaTableroResponse::getEstado));
     }

@@ -12,16 +12,18 @@ public class TareaTableroResponse {
     private EstadoTarea estado;
     private LocalDateTime fechaLimite;
     private boolean vencida; // 🔥 indicador visual
+    private Long idUsuarioAsignado;
 
     public TareaTableroResponse(Long idTarea, String nombre, String responsable,
                                 EstadoTarea estado, LocalDateTime fechaLimite,
-                                boolean vencida) {
+                                boolean vencida, Long idUsuarioAsignado) {
         this.idTarea = idTarea;
         this.nombre = nombre;
         this.responsable = responsable;
         this.estado = estado;
         this.fechaLimite = fechaLimite;
         this.vencida = vencida;
+        this.idUsuarioAsignado = idUsuarioAsignado;
     }
 
     public Long getIdTarea() { return idTarea; }
@@ -41,4 +43,7 @@ public class TareaTableroResponse {
 
     public boolean isVencida() { return vencida; }
     public void setVencida(boolean vencida) { this.vencida = vencida; }
+
+    public Long getIdUsuarioAsignado() { return idUsuarioAsignado; }
+    public void setIdUsuarioAsignado(Long idUsuarioAsignado) { this.idUsuarioAsignado = idUsuarioAsignado; }
 }

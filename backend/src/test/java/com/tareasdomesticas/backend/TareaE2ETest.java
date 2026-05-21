@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -154,6 +155,18 @@ class TareaE2ETest {
                 .findByUsuarioIdUsuarioAndGrupoIdGrupo(miembroCreado.getIdUsuario(), idGrupoCreado)
                 .orElse(null);
         assertThat(miembroAsignadoEnGrupo).isNotNull();
+
+        MvcResult detalleResult = mockMvc.perform(get("/tareas/{idTarea}", idTarea)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode detalleNode = objectMapper.readTree(detalleResult.getResponse().getContentAsString());
+        assertThat(detalleNode.get("idTarea").asLong()).isEqualTo(idTarea);
+        assertThat(detalleNode.get("nombre").asText()).isEqualTo("Lavar los platos");
+        assertThat(detalleNode.get("descripcion").asText()).isEqualTo("Usar detergente y esponja");
+        assertThat(detalleNode.get("estado").asText()).isEqualTo(EstadoTarea.PENDIENTE.name());
     }
 
         private String postJson(String path, Object body, String authorizationHeader, int expectedStatus) throws Exception {

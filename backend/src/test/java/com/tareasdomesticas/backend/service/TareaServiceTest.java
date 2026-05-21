@@ -12,12 +12,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 import com.tareasdomesticas.backend.dto.CrearTareaRequest;
 import com.tareasdomesticas.backend.dto.CrearTareaResponse;
+import com.tareasdomesticas.backend.dto.DetalleTareaResponse;
 import com.tareasdomesticas.backend.dto.EditarTareaRequest;
 import com.tareasdomesticas.backend.dto.EditarTareaResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
@@ -424,6 +427,141 @@ class TareaServiceTest {
 
         assertEquals(tareaPendiente.getIdTarea(), response.getIdTarea());
         assertEquals(EstadoTarea.PENDIENTE, response.getEstado());
+    }
+
+    @Test
+    void obtenerDetalleTarea_adminMismoGrupo_retornaDetalle() {
+        MiembroGrupo adminEnGrupo = crearMiembro(admin, grupo, rolAdmin);
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(admin);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(admin.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(adminEnGrupo));
+
+        DetalleTareaResponse response = tareaService.obtenerDetalleTarea("Bearer token", tareaPendiente.getIdTarea());
+
+        assertEquals(tareaPendiente.getIdTarea(), response.getIdTarea());
+        assertEquals("Tarea base", response.getNombre());
+        assertEquals(PrioridadTarea.MEDIA, response.getPrioridad());
+    }
+
+    @Test
+    void obtenerDetalleTarea_miembroMismoGrupo_retornaDetalle() {
+        MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(miembroEnGrupo));
+
+        DetalleTareaResponse response = tareaService.obtenerDetalleTarea("Bearer token", tareaPendiente.getIdTarea());
+
+        assertEquals(tareaPendiente.getIdTarea(), response.getIdTarea());
+        assertEquals(EstadoTarea.PENDIENTE, response.getEstado());
+    }
+
+    @Test
+    void obtenerDetalleTarea_descripcionNula_retornaSinRomper() {
+        Tarea tareaSinDescripcion = crearTareaBase(104L, EstadoTarea.PENDIENTE, LocalDateTime.now().plusDays(1));
+        tareaSinDescripcion.setDescripcion(null);
+        MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaSinDescripcion.getIdTarea())).thenReturn(Optional.of(tareaSinDescripcion));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(miembroEnGrupo));
+
+        DetalleTareaResponse response = tareaService.obtenerDetalleTarea("Bearer token", tareaSinDescripcion.getIdTarea());
+
+        assertNull(response.getDescripcion());
+    }
+
+    @Test
+    void obtenerDetalleTarea_retornaEstadoPendiente() {
+        MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(miembroEnGrupo));
+
+        DetalleTareaResponse response = tareaService.obtenerDetalleTarea("Bearer token", tareaPendiente.getIdTarea());
+        assertEquals(EstadoTarea.PENDIENTE, response.getEstado());
+    }
+
+    @Test
+    void obtenerDetalleTarea_retornaEstadoEnProgreso() {
+        MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaEnProgreso.getIdTarea())).thenReturn(Optional.of(tareaEnProgreso));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(miembroEnGrupo));
+
+        DetalleTareaResponse response = tareaService.obtenerDetalleTarea("Bearer token", tareaEnProgreso.getIdTarea());
+        assertEquals(EstadoTarea.EN_PROGRESO, response.getEstado());
+    }
+
+    @Test
+    void obtenerDetalleTarea_retornaEstadoCompletada() {
+        MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaCompletada.getIdTarea())).thenReturn(Optional.of(tareaCompletada));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(miembroEnGrupo));
+
+        DetalleTareaResponse response = tareaService.obtenerDetalleTarea("Bearer token", tareaCompletada.getIdTarea());
+        assertEquals(EstadoTarea.COMPLETADA, response.getEstado());
+    }
+
+    @Test
+    void obtenerDetalleTarea_retornaEstadoVencida() {
+        MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaVencida.getIdTarea())).thenReturn(Optional.of(tareaVencida));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(miembroEnGrupo));
+
+        DetalleTareaResponse response = tareaService.obtenerDetalleTarea("Bearer token", tareaVencida.getIdTarea());
+        assertEquals(EstadoTarea.VENCIDA, response.getEstado());
+    }
+
+    @Test
+    void obtenerDetalleTarea_tareaInexistente_retornaNotFound() {
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(999L)).thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> tareaService.obtenerDetalleTarea("Bearer token", 999L));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        assertEquals("Tarea no encontrada", ex.getMessage());
+    }
+
+    @Test
+    void obtenerDetalleTarea_otroGrupo_retornaForbidden() {
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> tareaService.obtenerDetalleTarea("Bearer token", tareaPendiente.getIdTarea()));
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+        assertEquals("No tiene permiso para consultar esta tarea", ex.getMessage());
+    }
+
+    @Test
+    void obtenerDetalleTarea_noModificaDatos() {
+        MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(miembroEnGrupo));
+
+        DetalleTareaResponse response = tareaService.obtenerDetalleTarea("Bearer token", tareaPendiente.getIdTarea());
+
+        assertEquals(tareaPendiente.getNombre(), response.getNombre());
+        verify(tareaRepository, never()).save(any(Tarea.class));
     }
         private MiembroGrupo crearMiembro(Usuario usuario, Grupo grupo, Role role) {
                 MiembroGrupo miembroGrupo = new MiembroGrupo();

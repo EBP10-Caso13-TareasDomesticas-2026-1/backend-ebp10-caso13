@@ -18,6 +18,7 @@ import com.tareasdomesticas.backend.dto.CambiarEstadoTareaRequest;
 import com.tareasdomesticas.backend.dto.CambiarEstadoTareaResponse;
 import com.tareasdomesticas.backend.dto.CrearTareaRequest;
 import com.tareasdomesticas.backend.dto.CrearTareaResponse;
+import com.tareasdomesticas.backend.dto.DetalleTareaResponse;
 import com.tareasdomesticas.backend.dto.EditarTareaRequest;
 import com.tareasdomesticas.backend.dto.EditarTareaResponse;
 import com.tareasdomesticas.backend.dto.TareaTableroResponse;
@@ -83,6 +84,18 @@ public class TareaController {
                 "tablero", tablero
         ));
     }
+
+        // ===============================
+        // 🧩 DETALLE DE TAREA
+        // ===============================
+        @GetMapping("/{idTarea}")
+        public ResponseEntity<DetalleTareaResponse> obtenerDetalleTarea(
+                        @RequestHeader(value = "Authorization", required = false) String authorization,
+                        @PathVariable Long idTarea
+        ) {
+                DetalleTareaResponse response = tareaService.obtenerDetalleTarea(authorization, idTarea);
+                return ResponseEntity.ok(response);
+        }
 
     // ===============================
     // 🧩 CREAR TAREA

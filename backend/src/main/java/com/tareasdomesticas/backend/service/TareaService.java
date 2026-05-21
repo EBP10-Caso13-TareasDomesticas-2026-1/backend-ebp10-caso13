@@ -15,6 +15,7 @@ import com.tareasdomesticas.backend.dto.CambiarEstadoTareaRequest;
 import com.tareasdomesticas.backend.dto.CambiarEstadoTareaResponse;
 import com.tareasdomesticas.backend.dto.CrearTareaRequest;
 import com.tareasdomesticas.backend.dto.CrearTareaResponse;
+import com.tareasdomesticas.backend.dto.DetalleTareaResponse;
 import com.tareasdomesticas.backend.dto.EditarTareaRequest;
 import com.tareasdomesticas.backend.dto.EditarTareaResponse;
 import com.tareasdomesticas.backend.dto.TareaTableroResponse;
@@ -157,6 +158,33 @@ public class TareaService {
                 "Tarea creada correctamente"
         );
     }
+
+            // ===============================
+            // 🧩 DETALLE DE TAREA
+            // ===============================
+            @Transactional(readOnly = true)
+            public DetalleTareaResponse obtenerDetalleTarea(String authorizationHeader, Long idTarea) {
+            Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+            Tarea tarea = tareaRepository.findById(idTarea)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
+
+            miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), tarea.getGrupo().getIdGrupo())
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "No tiene permiso para consultar esta tarea"));
+
+            return new DetalleTareaResponse(
+                tarea.getIdTarea(),
+                tarea.getNombre(),
+                tarea.getDescripcion(),
+                tarea.getPrioridad(),
+                tarea.getEstado(),
+                tarea.getFechaLimite(),
+                tarea.getGrupo().getIdGrupo(),
+                tarea.getUsuarioAsignado().getIdUsuario(),
+                tarea.getUsuarioAsignado().getNombre()
+            );
+            }
 
     // ===============================
     // 🧩 EDITAR TAREA

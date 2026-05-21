@@ -5,12 +5,21 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.tareasdomesticas.backend.dto.CambiarEstadoTareaRequest;
 import com.tareasdomesticas.backend.dto.CambiarEstadoTareaResponse;
 import com.tareasdomesticas.backend.dto.CrearTareaRequest;
 import com.tareasdomesticas.backend.dto.CrearTareaResponse;
+import com.tareasdomesticas.backend.dto.EditarTareaRequest;
+import com.tareasdomesticas.backend.dto.EditarTareaResponse;
 import com.tareasdomesticas.backend.dto.TareaTableroResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
 import com.tareasdomesticas.backend.service.TareaService;
@@ -86,6 +95,19 @@ public class TareaController {
         CrearTareaResponse response = tareaService.crearTarea(authorization, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+        // ===============================
+        // 🧩 EDITAR TAREA
+        // ===============================
+        @PatchMapping("/{idTarea}")
+        public ResponseEntity<EditarTareaResponse> editarTarea(
+                        @RequestHeader("Authorization") String authorization,
+                        @PathVariable Long idTarea,
+                        @Valid @RequestBody EditarTareaRequest request
+        ) {
+                EditarTareaResponse response = tareaService.editarTarea(authorization, idTarea, request);
+                return ResponseEntity.ok(response);
+        }
 
     // ===============================
     // 🧩 CAMBIAR ESTADO

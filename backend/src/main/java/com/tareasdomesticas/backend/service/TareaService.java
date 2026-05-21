@@ -15,6 +15,8 @@ import com.tareasdomesticas.backend.dto.CambiarEstadoTareaRequest;
 import com.tareasdomesticas.backend.dto.CambiarEstadoTareaResponse;
 import com.tareasdomesticas.backend.dto.CrearTareaRequest;
 import com.tareasdomesticas.backend.dto.CrearTareaResponse;
+import com.tareasdomesticas.backend.dto.EditarTareaRequest;
+import com.tareasdomesticas.backend.dto.EditarTareaResponse;
 import com.tareasdomesticas.backend.dto.TareaTableroResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
 import com.tareasdomesticas.backend.entity.Grupo;
@@ -153,6 +155,68 @@ public class TareaService {
                 tareaGuardada.getGrupo().getIdGrupo(),
                 tareaGuardada.getUsuarioAsignado().getIdUsuario(),
                 "Tarea creada correctamente"
+        );
+    }
+
+    // ===============================
+    // 🧩 EDITAR TAREA
+    // ===============================
+    @Transactional
+    public EditarTareaResponse editarTarea(String authorizationHeader, Long idTarea, EditarTareaRequest request) {
+        Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        Tarea tarea = tareaRepository.findById(idTarea)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
+
+        evaluarVencimiento(tarea);
+
+        MiembroGrupo miembroAutenticado = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), tarea.getGrupo().getIdGrupo())
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "El usuario no pertenece al grupo de la tarea"));
+
+        boolean esAdministrador = ROL_ADMINISTRADOR.equalsIgnoreCase(miembroAutenticado.getRol().getNombre());
+        if (!esAdministrador) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo un administrador puede editar tareas");
+        }
+
+        if (tarea.getEstado() == EstadoTarea.COMPLETADA) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "No se puede editar una tarea completada");
+        }
+
+        boolean permiteFecha = tarea.getEstado() == EstadoTarea.PENDIENTE || tarea.getEstado() == EstadoTarea.EN_PROGRESO;
+
+        if (!permiteFecha && request.getFechaLimite() != null
+                && !request.getFechaLimite().equals(tarea.getFechaLimite())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La fecha limite no puede modificarse en una tarea vencida");
+        }
+
+        if (permiteFecha && request.getFechaLimite() != null && !request.getFechaLimite().isAfter(LocalDateTime.now())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "La fecha y hora limite deben ser posteriores al momento actual");
+        }
+
+        tarea.setNombre(request.getNombre().trim());
+        tarea.setDescripcion(normalizarDescripcion(request.getDescripcion()));
+        if (request.getPrioridad() != null) {
+            tarea.setPrioridad(request.getPrioridad());
+        }
+        if (permiteFecha && request.getFechaLimite() != null) {
+            tarea.setFechaLimite(request.getFechaLimite());
+        }
+
+        Tarea tareaGuardada = tareaRepository.save(tarea);
+
+        return new EditarTareaResponse(
+                tareaGuardada.getIdTarea(),
+                tareaGuardada.getNombre(),
+                tareaGuardada.getDescripcion(),
+                tareaGuardada.getPrioridad(),
+                tareaGuardada.getEstado(),
+                tareaGuardada.getFechaLimite(),
+                tareaGuardada.getFechaCambioEstado(),
+                tareaGuardada.getGrupo().getIdGrupo(),
+                tareaGuardada.getUsuarioAsignado().getIdUsuario(),
+                "Tarea actualizada correctamente"
         );
     }
 

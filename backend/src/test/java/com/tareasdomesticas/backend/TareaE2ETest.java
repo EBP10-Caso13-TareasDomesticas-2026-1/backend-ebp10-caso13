@@ -1,11 +1,8 @@
 package com.tareasdomesticas.backend;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.tareasdomesticas.backend.dto.*;
-import com.tareasdomesticas.backend.entity.*;
-import com.tareasdomesticas.backend.repository.*;
+import java.time.LocalDateTime;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,13 +12,31 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-
-import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tareasdomesticas.backend.dto.CrearGrupoRequest;
+import com.tareasdomesticas.backend.dto.CrearTareaRequest;
+import com.tareasdomesticas.backend.dto.InicioSesionRequest;
+import com.tareasdomesticas.backend.dto.InicioSesionResponse;
+import com.tareasdomesticas.backend.dto.RegistroUsuarioRequest;
+import com.tareasdomesticas.backend.dto.RegistroUsuarioResponse;
+import com.tareasdomesticas.backend.dto.UnirseGrupoRequest;
+import com.tareasdomesticas.backend.entity.EstadoTarea;
+import com.tareasdomesticas.backend.entity.MiembroGrupo;
+import com.tareasdomesticas.backend.entity.PrioridadTarea;
+import com.tareasdomesticas.backend.entity.Role;
+import com.tareasdomesticas.backend.entity.Tarea;
+import com.tareasdomesticas.backend.repository.GrupoRepository;
+import com.tareasdomesticas.backend.repository.MiembroGrupoRepository;
+import com.tareasdomesticas.backend.repository.RoleRepository;
+import com.tareasdomesticas.backend.repository.SesionRepository;
+import com.tareasdomesticas.backend.repository.TareaRepository;
+import com.tareasdomesticas.backend.repository.UsuarioRepository;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc

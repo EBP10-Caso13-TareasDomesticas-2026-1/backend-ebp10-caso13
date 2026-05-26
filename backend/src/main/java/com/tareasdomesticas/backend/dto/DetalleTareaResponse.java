@@ -16,13 +16,14 @@ public class DetalleTareaResponse {
     private Long idGrupo;
     private Long idUsuarioAsignado;
     private String responsable;
+    private boolean exMiembro;
 
     public DetalleTareaResponse() {
     }
 
     public DetalleTareaResponse(Long idTarea, String nombre, String descripcion, PrioridadTarea prioridad,
                                 EstadoTarea estado, LocalDateTime fechaLimite, Long idGrupo,
-                                Long idUsuarioAsignado, String responsable) {
+                                Long idUsuarioAsignado, String responsable, boolean exMiembro) {
         this.idTarea = idTarea;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -32,6 +33,7 @@ public class DetalleTareaResponse {
         this.idGrupo = idGrupo;
         this.idUsuarioAsignado = idUsuarioAsignado;
         this.responsable = responsable;
+        this.exMiembro = exMiembro;
     }
 
     public Long getIdTarea() {
@@ -104,5 +106,13 @@ public class DetalleTareaResponse {
 
     public void setResponsable(String responsable) {
         this.responsable = responsable;
+    }
+
+    public boolean isExMiembro() {
+        return exMiembro;
+    }
+
+    public void setExMiembro(boolean exMiembro) {
+        this.exMiembro = exMiembro;
     }
 }

@@ -12,4 +12,13 @@ public interface TareaRepository extends JpaRepository<Tarea, Long> {
 
     List<Tarea> findByEstadoInAndFechaLimiteBefore(List<EstadoTarea> estados, LocalDateTime fechaLimite);
     List<Tarea> findByGrupoIdGrupo(Long idGrupo);
+
+    List<Tarea> findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstadoIn(
+            Long idGrupo, Long idUsuario, List<EstadoTarea> estados);
+
+    List<Tarea> findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstado(
+            Long idGrupo, Long idUsuario, EstadoTarea estado);
+
+    List<Tarea> findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndExMiembro(
+            Long idGrupo, Long idUsuario, boolean exMiembro);
 }

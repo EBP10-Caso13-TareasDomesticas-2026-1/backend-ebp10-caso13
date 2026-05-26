@@ -1,7 +1,13 @@
 package com.tareasdomesticas.backend.controller;
 
+import com.tareasdomesticas.backend.dto.AbandonarGrupoResponse;
 import com.tareasdomesticas.backend.dto.CrearGrupoRequest;
+import com.tareasdomesticas.backend.dto.EliminarMiembroResponse;
 import com.tareasdomesticas.backend.dto.GrupoResponse;
+import com.tareasdomesticas.backend.dto.TransferirAdminRequest;
+import com.tareasdomesticas.backend.dto.TransferirAdminResponse;
+
+import jakarta.validation.Valid;
 import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.entity.MiembroGrupo;
 import com.tareasdomesticas.backend.entity.Role;
@@ -130,5 +136,34 @@ public class GrupoController {
         Grupo actualizado = grupoService.guardar(grupo);
 
         return ResponseEntity.ok(actualizado);
+    }
+
+    @DeleteMapping("/{idGrupo}/miembros/{idMiembro}")
+    public ResponseEntity<EliminarMiembroResponse> eliminarMiembro(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable Long idGrupo,
+            @PathVariable Long idMiembro) {
+        EliminarMiembroResponse response =
+                miembroGrupoService.eliminarMiembro(idGrupo, idMiembro, authorization);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{idGrupo}/abandonar")
+    public ResponseEntity<AbandonarGrupoResponse> abandonarGrupo(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable Long idGrupo) {
+        AbandonarGrupoResponse response =
+                miembroGrupoService.abandonarGrupo(idGrupo, authorization);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{idGrupo}/transferir-admin")
+    public ResponseEntity<TransferirAdminResponse> transferirAdmin(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable Long idGrupo,
+            @Valid @RequestBody TransferirAdminRequest request) {
+        TransferirAdminResponse response =
+                miembroGrupoService.transferirAdmin(idGrupo, request.getIdNuevoAdmin(), authorization);
+        return ResponseEntity.ok(response);
     }
 }

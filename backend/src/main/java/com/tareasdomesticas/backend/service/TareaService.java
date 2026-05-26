@@ -182,7 +182,8 @@ public class TareaService {
                 tarea.getFechaLimite(),
                 tarea.getGrupo().getIdGrupo(),
                 tarea.getUsuarioAsignado().getIdUsuario(),
-                tarea.getUsuarioAsignado().getNombre()
+                tarea.getUsuarioAsignado().getNombre(),
+                tarea.isExMiembro()
             );
             }
 

@@ -53,6 +53,9 @@ public class Tarea {
     @Column(name = "fecha_cambio_estado")
     private LocalDateTime fechaCambioEstado;
 
+    @Column(name = "ex_miembro", nullable = false)
+    private boolean exMiembro = false;
+
     public Tarea() {
     }
 
@@ -148,5 +151,13 @@ public class Tarea {
 
     public void setFechaCambioEstado(LocalDateTime fechaCambioEstado) {
         this.fechaCambioEstado = fechaCambioEstado;
+    }
+
+    public boolean isExMiembro() {
+        return exMiembro;
+    }
+
+    public void setExMiembro(boolean exMiembro) {
+        this.exMiembro = exMiembro;
     }
 }

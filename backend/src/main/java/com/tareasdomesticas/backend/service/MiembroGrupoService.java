@@ -9,35 +9,45 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tareasdomesticas.backend.dto.AbandonarGrupoResponse;
+import com.tareasdomesticas.backend.dto.EliminarMiembroResponse;
 import com.tareasdomesticas.backend.dto.GrupoLoginResponse;
 import com.tareasdomesticas.backend.dto.MiembroGrupoResponse;
+import com.tareasdomesticas.backend.dto.TransferirAdminResponse;
 import com.tareasdomesticas.backend.dto.UnirseGrupoRequest;
 import com.tareasdomesticas.backend.dto.UnirseGrupoResponse;
+import com.tareasdomesticas.backend.entity.EstadoTarea;
 import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.entity.MiembroGrupo;
 import com.tareasdomesticas.backend.entity.Role;
+import com.tareasdomesticas.backend.entity.Tarea;
 import com.tareasdomesticas.backend.entity.Usuario;
 import com.tareasdomesticas.backend.exception.ApiException;
 import com.tareasdomesticas.backend.repository.MiembroGrupoRepository;
+import com.tareasdomesticas.backend.repository.TareaRepository;
 
 @Service
 public class MiembroGrupoService {
 
     private static final String ROL_MIEMBRO = "MIEMBRO";
+    private static final String ROL_ADMINISTRADOR = "ADMINISTRADOR";
 
     private final MiembroGrupoRepository miembroGrupoRepository;
     private final SesionService sesionService;
     private final GrupoService grupoService;
     private final RoleService roleService;
+    private final TareaRepository tareaRepository;
 
     public MiembroGrupoService(MiembroGrupoRepository miembroGrupoRepository,
                                SesionService sesionService,
                                GrupoService grupoService,
-                               RoleService roleService) {
+                               RoleService roleService,
+                               TareaRepository tareaRepository) {
         this.miembroGrupoRepository = miembroGrupoRepository;
         this.sesionService = sesionService;
         this.grupoService = grupoService;
         this.roleService = roleService;
+        this.tareaRepository = tareaRepository;
     }
 
     public List<MiembroGrupo> listarTodos() {
@@ -109,6 +119,14 @@ public class MiembroGrupoService {
 
         MiembroGrupo guardado = miembroGrupoRepository.save(miembroGrupo);
 
+        List<Tarea> tareasExMiembro = tareaRepository
+                .findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndExMiembro(
+                        grupo.getIdGrupo(), usuarioAutenticado.getIdUsuario(), true);
+        if (!tareasExMiembro.isEmpty()) {
+            tareasExMiembro.forEach(t -> t.setExMiembro(false));
+            tareaRepository.saveAll(tareasExMiembro);
+        }
+
         return new UnirseGrupoResponse(
                 guardado.getIdMiembroGrupo(),
                 guardado.getUsuario().getIdUsuario(),
@@ -118,5 +136,128 @@ public class MiembroGrupoService {
                 guardado.getFechaUnion(),
                 "Te has unido al grupo exitosamente"
         );
+    }
+
+    @Transactional
+    public AbandonarGrupoResponse abandonarGrupo(Long idGrupo, String authorizationHeader) {
+        Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        MiembroGrupo miembro = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), idGrupo)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No perteneces a este grupo"));
+
+        List<Tarea> tareasActivas = tareaRepository
+                .findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstadoIn(
+                        idGrupo, usuarioAutenticado.getIdUsuario(),
+                        List.of(EstadoTarea.PENDIENTE, EstadoTarea.EN_PROGRESO, EstadoTarea.VENCIDA));
+
+        if (!tareasActivas.isEmpty()) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "No puedes salir del grupo hasta resolver tus tareas activas o vencidas");
+        }
+
+        if (ROL_ADMINISTRADOR.equals(miembro.getRol().getNombre())) {
+            List<MiembroGrupo> miembrosActivos = miembroGrupoRepository.findByGrupoIdGrupo(idGrupo);
+            if (miembrosActivos.size() > 1) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "Debes transferir el rol de administrador antes de abandonar el grupo");
+            }
+        }
+
+        List<Tarea> tareasCompletadas = tareaRepository
+                .findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstado(
+                        idGrupo, usuarioAutenticado.getIdUsuario(), EstadoTarea.COMPLETADA);
+        if (!tareasCompletadas.isEmpty()) {
+            tareasCompletadas.forEach(t -> t.setExMiembro(true));
+            tareaRepository.saveAll(tareasCompletadas);
+        }
+
+        Integer puntosAcumulados = miembro.getPuntos() != null ? miembro.getPuntos() : 0;
+        miembroGrupoRepository.delete(miembro);
+
+        return new AbandonarGrupoResponse(usuarioAutenticado.getIdUsuario(), idGrupo,
+                puntosAcumulados, "Has abandonado el grupo correctamente");
+    }
+
+    @Transactional
+    public TransferirAdminResponse transferirAdmin(Long idGrupo, Long idNuevoAdmin,
+                                                   String authorizationHeader) {
+        Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        MiembroGrupo miembroSolicitante = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), idGrupo)
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,
+                        "No tienes permisos para transferir el rol de administrador"));
+
+        if (!ROL_ADMINISTRADOR.equals(miembroSolicitante.getRol().getNombre())) {
+            throw new ApiException(HttpStatus.FORBIDDEN,
+                    "No tienes permisos para transferir el rol de administrador");
+        }
+
+        MiembroGrupo miembroNuevoAdmin = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(idNuevoAdmin, idGrupo)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
+                        "El usuario no es miembro del grupo"));
+
+        Role rolAdministrador = roleService.buscarPorNombre(ROL_ADMINISTRADOR)
+                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Rol ADMINISTRADOR no configurado"));
+
+        Role rolMiembro = roleService.buscarPorNombre(ROL_MIEMBRO)
+                .orElseThrow(() -> new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Rol MIEMBRO no configurado"));
+
+        miembroSolicitante.setRol(rolMiembro);
+        miembroNuevoAdmin.setRol(rolAdministrador);
+
+        miembroGrupoRepository.save(miembroSolicitante);
+        miembroGrupoRepository.save(miembroNuevoAdmin);
+
+        return new TransferirAdminResponse(idGrupo, usuarioAutenticado.getIdUsuario(),
+                idNuevoAdmin, "Rol de administrador transferido correctamente");
+    }
+
+    @Transactional
+    public EliminarMiembroResponse eliminarMiembro(Long idGrupo, Long idUsuarioAEliminar,
+                                                   String authorizationHeader) {
+        Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        MiembroGrupo miembroSolicitante = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), idGrupo)
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,
+                        "No tienes permisos para eliminar miembros del grupo"));
+
+        if (!ROL_ADMINISTRADOR.equals(miembroSolicitante.getRol().getNombre())) {
+            throw new ApiException(HttpStatus.FORBIDDEN,
+                    "No tienes permisos para eliminar miembros del grupo");
+        }
+
+        MiembroGrupo miembroAEliminar = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(idUsuarioAEliminar, idGrupo)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
+                        "Miembro no encontrado en el grupo"));
+
+        List<Tarea> tareasActivas = tareaRepository
+                .findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstadoIn(
+                        idGrupo, idUsuarioAEliminar,
+                        List.of(EstadoTarea.PENDIENTE, EstadoTarea.EN_PROGRESO, EstadoTarea.VENCIDA));
+
+        if (!tareasActivas.isEmpty()) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "El miembro tiene tareas activas o vencidas que deben resolverse antes de ser removido del grupo");
+        }
+
+        List<Tarea> tareasCompletadas = tareaRepository
+                .findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstado(
+                        idGrupo, idUsuarioAEliminar, EstadoTarea.COMPLETADA);
+        if (!tareasCompletadas.isEmpty()) {
+            tareasCompletadas.forEach(t -> t.setExMiembro(true));
+            tareaRepository.saveAll(tareasCompletadas);
+        }
+
+        miembroGrupoRepository.delete(miembroAEliminar);
+
+        return new EliminarMiembroResponse(idUsuarioAEliminar, idGrupo,
+                "Miembro eliminado correctamente");
     }
 }

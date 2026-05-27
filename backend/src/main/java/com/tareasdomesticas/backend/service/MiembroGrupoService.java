@@ -16,6 +16,8 @@ import com.tareasdomesticas.backend.dto.MiembroGrupoResponse;
 import com.tareasdomesticas.backend.dto.TransferirAdminResponse;
 import com.tareasdomesticas.backend.dto.UnirseGrupoRequest;
 import com.tareasdomesticas.backend.dto.UnirseGrupoResponse;
+import com.tareasdomesticas.backend.dto.RankingResponse;
+import com.tareasdomesticas.backend.dto.RankingMemberResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
 import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.entity.MiembroGrupo;
@@ -37,6 +39,8 @@ public class MiembroGrupoService {
     private final GrupoService grupoService;
     private final RoleService roleService;
     private final TareaRepository tareaRepository;
+
+        public record RankingEntry(Long idUsuario, String nombre, Integer puntos, Integer tareasCompletadas) {}
 
     public MiembroGrupoService(MiembroGrupoRepository miembroGrupoRepository,
                                SesionService sesionService,
@@ -260,4 +264,57 @@ public class MiembroGrupoService {
         return new EliminarMiembroResponse(idUsuarioAEliminar, idGrupo,
                 "Miembro eliminado correctamente");
     }
+
+        @Transactional(readOnly = true)
+        public RankingResponse obtenerRankingPorGrupo(Long idGrupo, String authorizationHeader) {
+                Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+                // verificar que el usuario pertenece al grupo
+                miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), idGrupo)
+                                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "No perteneces a este grupo"));
+
+                // obtener miembros del grupo
+                var miembros = miembroGrupoRepository.findByGrupoIdGrupo(idGrupo);
+
+                // calcular puntajes y tareas completadas por miembro
+                var entradas = miembros.stream().map(m -> {
+                        Long idUsuario = m.getUsuario().getIdUsuario();
+                        String nombre = m.getUsuario().getNombre();
+                        Integer puntos = m.getPuntos() != null ? m.getPuntos() : 0;
+                        int completadas = tareaRepository.findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstado(idGrupo, idUsuario, EstadoTarea.COMPLETADA)
+                                        .size();
+                        return new RankingEntry(idUsuario, nombre, puntos, completadas);
+                }).toList();
+
+                // si nadie tiene tareas completadas -> mensaje
+                boolean cualquierCompletada = entradas.stream().anyMatch(e -> e.tareasCompletadas() > 0);
+                if (!cualquierCompletada) {
+                        return new RankingResponse("No hay tareas completadas en el grupo");
+                }
+
+                // ordenar por puntos desc, y en caso de empate por nombre asc
+                var ordenado = entradas.stream()
+                                .sorted((a, b) -> {
+                                        int cmp = b.puntos().compareTo(a.puntos());
+                                        if (cmp != 0) return cmp;
+                                        return a.nombre().compareToIgnoreCase(b.nombre());
+                                })
+                                .toList();
+
+                // asignar posiciones con empates
+                java.util.List<com.tareasdomesticas.backend.dto.RankingMemberResponse> ranking = new java.util.ArrayList<>();
+                int posicion = 1;
+                for (int i = 0; i < ordenado.size(); i++) {
+                        var entry = ordenado.get(i);
+                        if (i > 0) {
+                                var prev = ordenado.get(i - 1);
+                                if (!entry.puntos().equals(prev.puntos())) {
+                                        posicion = i + 1;
+                                }
+                        }
+                        ranking.add(new com.tareasdomesticas.backend.dto.RankingMemberResponse(posicion, entry.idUsuario(), entry.nombre(), entry.tareasCompletadas(), entry.puntos()));
+                }
+
+                return new RankingResponse(ranking);
+        }
 }

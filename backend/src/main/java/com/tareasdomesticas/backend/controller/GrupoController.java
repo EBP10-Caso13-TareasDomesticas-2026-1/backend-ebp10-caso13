@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.tareasdomesticas.backend.dto.RankingResponse;
 
 @RestController
 @RequestMapping("/grupos")
@@ -165,5 +166,19 @@ public class GrupoController {
         TransferirAdminResponse response =
                 miembroGrupoService.transferirAdmin(idGrupo, request.getIdNuevoAdmin(), authorization);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{idGrupo}/ranking")
+    public ResponseEntity<?> obtenerRanking(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("idGrupo") Long idGrupo) {
+        try {
+            RankingResponse response = miembroGrupoService.obtenerRankingPorGrupo(idGrupo, authorization);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("mensaje", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
 }

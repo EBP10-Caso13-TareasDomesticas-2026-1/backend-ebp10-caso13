@@ -151,7 +151,7 @@ public class MiembroGrupoService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "No perteneces a este grupo"));
 
         List<Tarea> tareasActivas = tareaRepository
-                .findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstadoIn(
+                .findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstadoInAndEliminadoFalse(
                         idGrupo, usuarioAutenticado.getIdUsuario(),
                         List.of(EstadoTarea.PENDIENTE, EstadoTarea.EN_PROGRESO, EstadoTarea.VENCIDA));
 
@@ -242,7 +242,7 @@ public class MiembroGrupoService {
                         "Miembro no encontrado en el grupo"));
 
         List<Tarea> tareasActivas = tareaRepository
-                .findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstadoIn(
+                .findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndEstadoInAndEliminadoFalse(
                         idGrupo, idUsuarioAEliminar,
                         List.of(EstadoTarea.PENDIENTE, EstadoTarea.EN_PROGRESO, EstadoTarea.VENCIDA));
 

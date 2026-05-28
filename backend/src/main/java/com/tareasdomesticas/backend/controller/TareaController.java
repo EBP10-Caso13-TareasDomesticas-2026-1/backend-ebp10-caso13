@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +23,7 @@ import com.tareasdomesticas.backend.dto.CrearTareaResponse;
 import com.tareasdomesticas.backend.dto.DetalleTareaResponse;
 import com.tareasdomesticas.backend.dto.EditarTareaRequest;
 import com.tareasdomesticas.backend.dto.EditarTareaResponse;
+import com.tareasdomesticas.backend.dto.EliminarTareaResponse;
 import com.tareasdomesticas.backend.dto.FiltrarTareasResponse;
 import com.tareasdomesticas.backend.dto.TareaTableroResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
@@ -131,12 +133,24 @@ public class TareaController {
         // 🧩 EDITAR TAREA
         // ===============================
         @PatchMapping("/{idTarea}")
-        public ResponseEntity<EditarTareaResponse> editarTarea(
+    public ResponseEntity<EditarTareaResponse> editarTarea(
                         @RequestHeader("Authorization") String authorization,
                         @PathVariable Long idTarea,
                         @Valid @RequestBody EditarTareaRequest request
         ) {
                 EditarTareaResponse response = tareaService.editarTarea(authorization, idTarea, request);
+                return ResponseEntity.ok(response);
+        }
+
+        // ===============================
+        // ELIMINAR TAREA
+        // ===============================
+        @DeleteMapping("/{idTarea}")
+        public ResponseEntity<EliminarTareaResponse> eliminarTarea(
+                        @RequestHeader("Authorization") String authorization,
+                        @PathVariable Long idTarea
+        ) {
+                EliminarTareaResponse response = tareaService.eliminarTarea(authorization, idTarea);
                 return ResponseEntity.ok(response);
         }
 

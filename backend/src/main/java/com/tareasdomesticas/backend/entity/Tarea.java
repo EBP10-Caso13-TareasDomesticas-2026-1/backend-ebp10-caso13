@@ -56,6 +56,12 @@ public class Tarea {
     @Column(name = "ex_miembro", nullable = false)
     private boolean exMiembro = false;
 
+    @Column(name = "eliminado", nullable = false)
+    private boolean eliminado = false;
+
+    @Column(name = "fecha_eliminacion")
+    private LocalDateTime fechaEliminacion;
+
     public Tarea() {
     }
 
@@ -159,5 +165,21 @@ public class Tarea {
 
     public void setExMiembro(boolean exMiembro) {
         this.exMiembro = exMiembro;
+    }
+
+    public boolean isEliminado() {
+        return eliminado;
+    }
+
+    public void setEliminado(boolean eliminado) {
+        this.eliminado = eliminado;
+    }
+
+    public LocalDateTime getFechaEliminacion() {
+        return fechaEliminacion;
+    }
+
+    public void setFechaEliminacion(LocalDateTime fechaEliminacion) {
+        this.fechaEliminacion = fechaEliminacion;
     }
 }

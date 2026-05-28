@@ -18,6 +18,7 @@ import com.tareasdomesticas.backend.dto.CrearTareaResponse;
 import com.tareasdomesticas.backend.dto.DetalleTareaResponse;
 import com.tareasdomesticas.backend.dto.EditarTareaRequest;
 import com.tareasdomesticas.backend.dto.EditarTareaResponse;
+import com.tareasdomesticas.backend.dto.EliminarTareaResponse;
 import com.tareasdomesticas.backend.dto.FiltrarTareasResponse;
 import com.tareasdomesticas.backend.dto.TareaTableroResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
@@ -59,7 +60,7 @@ public class TareaService {
                 .findByUsuarioIdUsuario(usuario.getIdUsuario())
                 .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "No pertenece a un grupo"));
 
-        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupo(
+        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupoAndEliminadoFalse(
                 miembro.getGrupo().getIdGrupo()
         );
 
@@ -92,7 +93,7 @@ public class TareaService {
                         "No pertenece a ese grupo"
                 ));
 
-        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupo(idGrupo);
+        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupoAndEliminadoFalse(idGrupo);
 
         return tareas.stream()
                 .sorted(Comparator.comparing(Tarea::getFechaLimite))
@@ -125,7 +126,7 @@ public class TareaService {
         List<EstadoTarea> estadosEnum = convertirEstados(estados);
         List<PrioridadTarea> prioridadesEnum = convertirPrioridades(prioridades);
 
-        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupo(idGrupo).stream()
+        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupoAndEliminadoFalse(idGrupo).stream()
                 .filter(t -> estadosEnum == null || estadosEnum.contains(t.getEstado()))
                 .filter(t -> prioridadesEnum == null || prioridadesEnum.contains(t.getPrioridad()))
                 .filter(t -> idsMiembros == null || idsMiembros.isEmpty()
@@ -245,7 +246,7 @@ public class TareaService {
             public DetalleTareaResponse obtenerDetalleTarea(String authorizationHeader, Long idTarea) {
             Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
 
-            Tarea tarea = tareaRepository.findById(idTarea)
+            Tarea tarea = tareaRepository.findByIdTareaAndEliminadoFalse(idTarea)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
 
             miembroGrupoRepository
@@ -276,6 +277,7 @@ public class TareaService {
         Tarea tarea = tareaRepository.findById(idTarea)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
 
+        validarTareaNoEliminada(tarea);
         evaluarVencimiento(tarea);
 
         MiembroGrupo miembroAutenticado = miembroGrupoRepository
@@ -337,6 +339,7 @@ public class TareaService {
         Tarea tarea = tareaRepository.findById(idTarea)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
 
+        validarTareaNoEliminada(tarea);
         evaluarVencimiento(tarea);
 
         MiembroGrupo miembroAutenticado = miembroGrupoRepository
@@ -387,12 +390,49 @@ public class TareaService {
     }
 
     // ===============================
+    // ELIMINAR TAREA
+    // ===============================
+    @Transactional
+    public EliminarTareaResponse eliminarTarea(String authorizationHeader, Long idTarea) {
+        Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        Tarea tarea = tareaRepository.findById(idTarea)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
+
+        MiembroGrupo miembroAutenticado = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), tarea.getGrupo().getIdGrupo())
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "Acceso denegado"));
+
+        boolean esAdministrador = ROL_ADMINISTRADOR.equalsIgnoreCase(miembroAutenticado.getRol().getNombre());
+        if (!esAdministrador) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Acceso denegado");
+        }
+
+        if (tarea.isEliminado()) {
+            throw new ApiException(HttpStatus.CONFLICT, "La tarea ya fue eliminada");
+        }
+
+        LocalDateTime fechaEliminacion = LocalDateTime.now();
+        tarea.setEliminado(true);
+        tarea.setFechaEliminacion(fechaEliminacion);
+
+        Tarea tareaGuardada = tareaRepository.save(tarea);
+
+        return new EliminarTareaResponse(
+                tareaGuardada.getIdTarea(),
+                tareaGuardada.isEliminado(),
+                tareaGuardada.getFechaEliminacion(),
+                "Tarea eliminada correctamente"
+        );
+    }
+
+    // ===============================
     // 🧩 TAREAS VENCIDAS AUTOMÁTICAS
     // ===============================
     @Transactional
     @Scheduled(fixedRate = 60000)
     public void marcarTareasVencidas() {
-        List<Tarea> tareasVencidas = tareaRepository.findByEstadoInAndFechaLimiteBefore(
+        List<Tarea> tareasVencidas = tareaRepository.findByEstadoInAndFechaLimiteBeforeAndEliminadoFalse(
                 List.of(EstadoTarea.PENDIENTE, EstadoTarea.EN_PROGRESO),
                 LocalDateTime.now()
         );
@@ -409,11 +449,19 @@ public class TareaService {
     // 🔧 MÉTODOS AUXILIARES
     // ===============================
     private void evaluarVencimiento(Tarea tarea) {
+        validarTareaNoEliminada(tarea);
+
         if ((tarea.getEstado() == EstadoTarea.PENDIENTE || tarea.getEstado() == EstadoTarea.EN_PROGRESO)
                 && tarea.getFechaLimite().isBefore(LocalDateTime.now())) {
             tarea.setEstado(EstadoTarea.VENCIDA);
             tarea.setFechaCambioEstado(LocalDateTime.now());
             tareaRepository.save(tarea);
+        }
+    }
+
+    private void validarTareaNoEliminada(Tarea tarea) {
+        if (tarea.isEliminado()) {
+            throw new ApiException(HttpStatus.CONFLICT, "La tarea ya fue eliminada");
         }
     }
 

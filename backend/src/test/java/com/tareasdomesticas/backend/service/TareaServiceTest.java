@@ -4,8 +4,11 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +26,7 @@ import com.tareasdomesticas.backend.dto.CrearTareaResponse;
 import com.tareasdomesticas.backend.dto.DetalleTareaResponse;
 import com.tareasdomesticas.backend.dto.EditarTareaRequest;
 import com.tareasdomesticas.backend.dto.EditarTareaResponse;
+import com.tareasdomesticas.backend.dto.EliminarTareaResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
 import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.entity.MiembroGrupo;
@@ -434,7 +438,7 @@ class TareaServiceTest {
         MiembroGrupo adminEnGrupo = crearMiembro(admin, grupo, rolAdmin);
 
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(admin);
-        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
         when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(admin.getIdUsuario(), grupo.getIdGrupo()))
                 .thenReturn(Optional.of(adminEnGrupo));
 
@@ -450,7 +454,7 @@ class TareaServiceTest {
         MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
 
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
-        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
         when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
                 .thenReturn(Optional.of(miembroEnGrupo));
 
@@ -467,7 +471,7 @@ class TareaServiceTest {
         MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
 
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
-        when(tareaRepository.findById(tareaSinDescripcion.getIdTarea())).thenReturn(Optional.of(tareaSinDescripcion));
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaSinDescripcion.getIdTarea())).thenReturn(Optional.of(tareaSinDescripcion));
         when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
                 .thenReturn(Optional.of(miembroEnGrupo));
 
@@ -480,7 +484,7 @@ class TareaServiceTest {
     void obtenerDetalleTarea_retornaEstadoPendiente() {
         MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
-        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
         when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
                 .thenReturn(Optional.of(miembroEnGrupo));
 
@@ -492,7 +496,7 @@ class TareaServiceTest {
     void obtenerDetalleTarea_retornaEstadoEnProgreso() {
         MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
-        when(tareaRepository.findById(tareaEnProgreso.getIdTarea())).thenReturn(Optional.of(tareaEnProgreso));
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaEnProgreso.getIdTarea())).thenReturn(Optional.of(tareaEnProgreso));
         when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
                 .thenReturn(Optional.of(miembroEnGrupo));
 
@@ -504,7 +508,7 @@ class TareaServiceTest {
     void obtenerDetalleTarea_retornaEstadoCompletada() {
         MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
-        when(tareaRepository.findById(tareaCompletada.getIdTarea())).thenReturn(Optional.of(tareaCompletada));
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaCompletada.getIdTarea())).thenReturn(Optional.of(tareaCompletada));
         when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
                 .thenReturn(Optional.of(miembroEnGrupo));
 
@@ -516,7 +520,7 @@ class TareaServiceTest {
     void obtenerDetalleTarea_retornaEstadoVencida() {
         MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
-        when(tareaRepository.findById(tareaVencida.getIdTarea())).thenReturn(Optional.of(tareaVencida));
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaVencida.getIdTarea())).thenReturn(Optional.of(tareaVencida));
         when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
                 .thenReturn(Optional.of(miembroEnGrupo));
 
@@ -527,7 +531,7 @@ class TareaServiceTest {
     @Test
     void obtenerDetalleTarea_tareaInexistente_retornaNotFound() {
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
-        when(tareaRepository.findById(999L)).thenReturn(Optional.empty());
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(999L)).thenReturn(Optional.empty());
 
         ApiException ex = assertThrows(ApiException.class,
                 () -> tareaService.obtenerDetalleTarea("Bearer token", 999L));
@@ -539,7 +543,7 @@ class TareaServiceTest {
     @Test
     void obtenerDetalleTarea_otroGrupo_retornaForbidden() {
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
-        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
         when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
                 .thenReturn(Optional.empty());
 
@@ -554,7 +558,7 @@ class TareaServiceTest {
     void obtenerDetalleTarea_noModificaDatos() {
         MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
         when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
-        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
         when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
                 .thenReturn(Optional.of(miembroEnGrupo));
 
@@ -563,6 +567,185 @@ class TareaServiceTest {
         assertEquals(tareaPendiente.getNombre(), response.getNombre());
         verify(tareaRepository, never()).save(any(Tarea.class));
     }
+
+    @Test
+    void eliminarTarea_adminMismoGrupo_marcaEliminadaConFechaYConservaEstado() {
+        MiembroGrupo adminEnGrupo = crearMiembro(admin, grupo, rolAdmin);
+        EstadoTarea estadoOriginal = tareaPendiente.getEstado();
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(admin);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(admin.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(adminEnGrupo));
+        when(tareaRepository.save(any(Tarea.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        EliminarTareaResponse response = tareaService.eliminarTarea("Bearer token", tareaPendiente.getIdTarea());
+
+        assertEquals(tareaPendiente.getIdTarea(), response.getIdTarea());
+        assertTrue(response.isEliminado());
+        assertNotNull(response.getFechaEliminacion());
+        assertTrue(tareaPendiente.isEliminado());
+        assertNotNull(tareaPendiente.getFechaEliminacion());
+        assertEquals(estadoOriginal, tareaPendiente.getEstado());
+    }
+
+    @Test
+    void eliminarTarea_noEliminaFisicamente_yNoCreaDuplicados() {
+        MiembroGrupo adminEnGrupo = crearMiembro(admin, grupo, rolAdmin);
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(admin);
+        when(tareaRepository.findById(tareaEnProgreso.getIdTarea())).thenReturn(Optional.of(tareaEnProgreso));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(admin.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(adminEnGrupo));
+        when(tareaRepository.save(any(Tarea.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        EliminarTareaResponse response = tareaService.eliminarTarea("Bearer token", tareaEnProgreso.getIdTarea());
+
+        assertEquals(tareaEnProgreso.getIdTarea(), response.getIdTarea());
+        verify(tareaRepository, never()).delete(any(Tarea.class));
+        verify(tareaRepository).save(tareaEnProgreso);
+    }
+
+    @Test
+    void eliminarTarea_completada_conservaEstadoYPuntaje() {
+        MiembroGrupo adminEnGrupo = crearMiembro(admin, grupo, rolAdmin);
+        MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
+        miembroEnGrupo.setPuntos(30);
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(admin);
+        when(tareaRepository.findById(tareaCompletada.getIdTarea())).thenReturn(Optional.of(tareaCompletada));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(admin.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(adminEnGrupo));
+        when(tareaRepository.save(any(Tarea.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        tareaService.eliminarTarea("Bearer token", tareaCompletada.getIdTarea());
+
+        assertEquals(EstadoTarea.COMPLETADA, tareaCompletada.getEstado());
+        assertEquals(30, miembroEnGrupo.getPuntos());
+        verify(miembroGrupoRepository, never()).save(any(MiembroGrupo.class));
+    }
+
+    @Test
+    void eliminarTarea_miembroMismoGrupo_retornaForbiddenYSinCambios() {
+        MiembroGrupo miembroEnGrupo = crearMiembro(miembro, grupo, rolMiembro);
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(miembro.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(miembroEnGrupo));
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> tareaService.eliminarTarea("Bearer token", tareaPendiente.getIdTarea()));
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+        assertEquals("Acceso denegado", ex.getMessage());
+        assertFalse(tareaPendiente.isEliminado());
+        assertNull(tareaPendiente.getFechaEliminacion());
+        verify(tareaRepository, never()).save(any(Tarea.class));
+    }
+
+    @Test
+    void eliminarTarea_adminOtroGrupo_retornaForbiddenYSinCambios() {
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(admin);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(admin.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> tareaService.eliminarTarea("Bearer token", tareaPendiente.getIdTarea()));
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+        assertEquals("Acceso denegado", ex.getMessage());
+        assertFalse(tareaPendiente.isEliminado());
+        verify(tareaRepository, never()).save(any(Tarea.class));
+    }
+
+    @Test
+    void eliminarTarea_inexistente_retornaNotFound() {
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(admin);
+        when(tareaRepository.findById(999L)).thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> tareaService.eliminarTarea("Bearer token", 999L));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        assertEquals("Tarea no encontrada", ex.getMessage());
+        verify(tareaRepository, never()).save(any(Tarea.class));
+    }
+
+    @Test
+    void eliminarTarea_yaEliminada_retornaConflictYSinCambiosHistoricos() {
+        MiembroGrupo adminEnGrupo = crearMiembro(admin, grupo, rolAdmin);
+        LocalDateTime fechaEliminacion = LocalDateTime.now().minusHours(1);
+        tareaPendiente.setEliminado(true);
+        tareaPendiente.setFechaEliminacion(fechaEliminacion);
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(admin);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+        when(miembroGrupoRepository.findByUsuarioIdUsuarioAndGrupoIdGrupo(admin.getIdUsuario(), grupo.getIdGrupo()))
+                .thenReturn(Optional.of(adminEnGrupo));
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> tareaService.eliminarTarea("Bearer token", tareaPendiente.getIdTarea()));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals("La tarea ya fue eliminada", ex.getMessage());
+        assertEquals(fechaEliminacion, tareaPendiente.getFechaEliminacion());
+        verify(tareaRepository, never()).save(any(Tarea.class));
+    }
+
+    @Test
+    void obtenerDetalleTarea_eliminada_retornaNotFound() {
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findByIdTareaAndEliminadoFalse(tareaPendiente.getIdTarea()))
+                .thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> tareaService.obtenerDetalleTarea("Bearer token", tareaPendiente.getIdTarea()));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        assertEquals("Tarea no encontrada", ex.getMessage());
+    }
+
+    @Test
+    void editarTarea_eliminada_retornaConflictYSinCambios() {
+        tareaPendiente.setEliminado(true);
+        EditarTareaRequest request = new EditarTareaRequest(
+                "Nuevo nombre",
+                "Nueva descripcion",
+                PrioridadTarea.ALTA,
+                LocalDateTime.now().plusHours(5)
+        );
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(admin);
+        when(tareaRepository.findById(tareaPendiente.getIdTarea())).thenReturn(Optional.of(tareaPendiente));
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> tareaService.editarTarea("Bearer token", tareaPendiente.getIdTarea(), request));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals("La tarea ya fue eliminada", ex.getMessage());
+        assertEquals("Tarea base", tareaPendiente.getNombre());
+        verify(tareaRepository, never()).save(any(Tarea.class));
+    }
+
+    @Test
+    void cambiarEstado_eliminada_retornaConflictYSinCambios() {
+        tareaEnProgreso.setEliminado(true);
+        var request = new com.tareasdomesticas.backend.dto.CambiarEstadoTareaRequest(EstadoTarea.COMPLETADA);
+
+        when(sesionService.obtenerUsuarioAutenticado("Bearer token")).thenReturn(miembro);
+        when(tareaRepository.findById(tareaEnProgreso.getIdTarea())).thenReturn(Optional.of(tareaEnProgreso));
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> tareaService.cambiarEstado("Bearer token", tareaEnProgreso.getIdTarea(), request));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+        assertEquals("La tarea ya fue eliminada", ex.getMessage());
+        assertEquals(EstadoTarea.EN_PROGRESO, tareaEnProgreso.getEstado());
+        verify(tareaRepository, never()).save(any(Tarea.class));
+    }
+
         private MiembroGrupo crearMiembro(Usuario usuario, Grupo grupo, Role role) {
                 MiembroGrupo miembroGrupo = new MiembroGrupo();
                 miembroGrupo.setUsuario(usuario);

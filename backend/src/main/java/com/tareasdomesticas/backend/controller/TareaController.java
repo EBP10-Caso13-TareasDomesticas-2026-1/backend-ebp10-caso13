@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tareasdomesticas.backend.dto.CambiarEstadoTareaRequest;
@@ -21,6 +22,7 @@ import com.tareasdomesticas.backend.dto.CrearTareaResponse;
 import com.tareasdomesticas.backend.dto.DetalleTareaResponse;
 import com.tareasdomesticas.backend.dto.EditarTareaRequest;
 import com.tareasdomesticas.backend.dto.EditarTareaResponse;
+import com.tareasdomesticas.backend.dto.FiltrarTareasResponse;
 import com.tareasdomesticas.backend.dto.TareaTableroResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
 import com.tareasdomesticas.backend.service.TareaService;
@@ -83,6 +85,22 @@ public class TareaController {
                 "mensaje", "Tablero del grupo cargado correctamente",
                 "tablero", tablero
         ));
+    }
+
+    // ===============================
+    // 🧩 FILTRAR TAREAS (HU-011)
+    // ===============================
+    @GetMapping("/grupo/{idGrupo}/filtrar")
+    public ResponseEntity<FiltrarTareasResponse> filtrarTareas(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable Long idGrupo,
+            @RequestParam(required = false) List<String> estados,
+            @RequestParam(required = false) List<String> prioridades,
+            @RequestParam(required = false) List<Long> idsMiembros) {
+
+        FiltrarTareasResponse response =
+                tareaService.filtrarTareas(idGrupo, estados, prioridades, idsMiembros, authorization);
+        return ResponseEntity.ok(response);
     }
 
         // ===============================

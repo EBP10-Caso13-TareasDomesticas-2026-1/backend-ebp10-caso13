@@ -18,6 +18,7 @@ import com.tareasdomesticas.backend.dto.CrearTareaResponse;
 import com.tareasdomesticas.backend.dto.DetalleTareaResponse;
 import com.tareasdomesticas.backend.dto.EditarTareaRequest;
 import com.tareasdomesticas.backend.dto.EditarTareaResponse;
+import com.tareasdomesticas.backend.dto.FiltrarTareasResponse;
 import com.tareasdomesticas.backend.dto.TareaTableroResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
 import com.tareasdomesticas.backend.entity.Grupo;
@@ -104,6 +105,84 @@ public class TareaService {
                         t.getEstado() == EstadoTarea.VENCIDA
                 ))
                 .collect(Collectors.groupingBy(TareaTableroResponse::getEstado));
+    }
+
+    // ===============================
+    // 🧩 FILTRAR TAREAS (HU-011)
+    // ===============================
+    @Transactional(readOnly = true)
+    public FiltrarTareasResponse filtrarTareas(Long idGrupo, List<String> estados,
+            List<String> prioridades, List<Long> idsMiembros, String authorizationHeader) {
+
+        Usuario usuario = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        if (miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuario.getIdUsuario(), idGrupo)
+                .isEmpty()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "No pertenece a ese grupo");
+        }
+
+        List<EstadoTarea> estadosEnum = convertirEstados(estados);
+        List<PrioridadTarea> prioridadesEnum = convertirPrioridades(prioridades);
+
+        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupo(idGrupo).stream()
+                .filter(t -> estadosEnum == null || estadosEnum.contains(t.getEstado()))
+                .filter(t -> prioridadesEnum == null || prioridadesEnum.contains(t.getPrioridad()))
+                .filter(t -> idsMiembros == null || idsMiembros.isEmpty()
+                        || idsMiembros.contains(t.getUsuarioAsignado().getIdUsuario()))
+                .toList();
+
+        List<DetalleTareaResponse> items = tareas.stream()
+                .map(t -> new DetalleTareaResponse(
+                        t.getIdTarea(),
+                        t.getNombre(),
+                        t.getDescripcion(),
+                        t.getPrioridad(),
+                        t.getEstado(),
+                        t.getFechaLimite(),
+                        t.getGrupo().getIdGrupo(),
+                        t.getUsuarioAsignado().getIdUsuario(),
+                        t.getUsuarioAsignado().getNombre(),
+                        t.isExMiembro()))
+                .toList();
+
+        String mensaje = tareas.isEmpty()
+                ? "No hay tareas que coincidan con los filtros seleccionados"
+                : tareas.size() + " tarea(s) encontrada(s)";
+
+        List<String> estadosAplicados = estadosEnum == null ? null
+                : estadosEnum.stream().map(Enum::name).toList();
+        List<String> prioridadesAplicadas = prioridadesEnum == null ? null
+                : prioridadesEnum.stream().map(Enum::name).toList();
+
+        FiltrarTareasResponse.FiltrosAplicados filtros =
+                new FiltrarTareasResponse.FiltrosAplicados(estadosAplicados, prioridadesAplicadas, idsMiembros);
+
+        return new FiltrarTareasResponse(mensaje, filtros, items);
+    }
+
+    private List<EstadoTarea> convertirEstados(List<String> valores) {
+        if (valores == null || valores.isEmpty()) return null;
+        return valores.stream()
+                .map(s -> {
+                    try { return EstadoTarea.fromString(s); }
+                    catch (Exception e) {
+                        throw new ApiException(HttpStatus.BAD_REQUEST, "Estado invalido: " + s);
+                    }
+                })
+                .toList();
+    }
+
+    private List<PrioridadTarea> convertirPrioridades(List<String> valores) {
+        if (valores == null || valores.isEmpty()) return null;
+        return valores.stream()
+                .map(s -> {
+                    try { return PrioridadTarea.valueOf(s.trim().toUpperCase()); }
+                    catch (Exception e) {
+                        throw new ApiException(HttpStatus.BAD_REQUEST, "Prioridad invalida: " + s);
+                    }
+                })
+                .toList();
     }
 
     // ===============================

@@ -1,7 +1,13 @@
 package com.tareasdomesticas.backend.controller;
 
+import com.tareasdomesticas.backend.dto.AbandonarGrupoResponse;
 import com.tareasdomesticas.backend.dto.CrearGrupoRequest;
+import com.tareasdomesticas.backend.dto.EliminarMiembroResponse;
 import com.tareasdomesticas.backend.dto.GrupoResponse;
+import com.tareasdomesticas.backend.dto.TransferirAdminRequest;
+import com.tareasdomesticas.backend.dto.TransferirAdminResponse;
+
+import jakarta.validation.Valid;
 import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.entity.MiembroGrupo;
 import com.tareasdomesticas.backend.entity.Role;
@@ -20,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.tareasdomesticas.backend.dto.RankingResponse;
 
 @RestController
 @RequestMapping("/grupos")
@@ -130,5 +137,48 @@ public class GrupoController {
         Grupo actualizado = grupoService.guardar(grupo);
 
         return ResponseEntity.ok(actualizado);
+    }
+
+    @DeleteMapping("/{idGrupo}/miembros/{idMiembro}")
+    public ResponseEntity<EliminarMiembroResponse> eliminarMiembro(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable Long idGrupo,
+            @PathVariable Long idMiembro) {
+        EliminarMiembroResponse response =
+                miembroGrupoService.eliminarMiembro(idGrupo, idMiembro, authorization);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{idGrupo}/abandonar")
+    public ResponseEntity<AbandonarGrupoResponse> abandonarGrupo(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable Long idGrupo) {
+        AbandonarGrupoResponse response =
+                miembroGrupoService.abandonarGrupo(idGrupo, authorization);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{idGrupo}/transferir-admin")
+    public ResponseEntity<TransferirAdminResponse> transferirAdmin(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable Long idGrupo,
+            @Valid @RequestBody TransferirAdminRequest request) {
+        TransferirAdminResponse response =
+                miembroGrupoService.transferirAdmin(idGrupo, request.getIdNuevoAdmin(), authorization);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{idGrupo}/ranking")
+    public ResponseEntity<?> obtenerRanking(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable("idGrupo") Long idGrupo) {
+        try {
+            RankingResponse response = miembroGrupoService.obtenerRankingPorGrupo(idGrupo, authorization);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("mensaje", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
 }

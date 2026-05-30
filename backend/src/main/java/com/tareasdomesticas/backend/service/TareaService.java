@@ -15,6 +15,11 @@ import com.tareasdomesticas.backend.dto.CambiarEstadoTareaRequest;
 import com.tareasdomesticas.backend.dto.CambiarEstadoTareaResponse;
 import com.tareasdomesticas.backend.dto.CrearTareaRequest;
 import com.tareasdomesticas.backend.dto.CrearTareaResponse;
+import com.tareasdomesticas.backend.dto.DetalleTareaResponse;
+import com.tareasdomesticas.backend.dto.EditarTareaRequest;
+import com.tareasdomesticas.backend.dto.EditarTareaResponse;
+import com.tareasdomesticas.backend.dto.EliminarTareaResponse;
+import com.tareasdomesticas.backend.dto.FiltrarTareasResponse;
 import com.tareasdomesticas.backend.dto.TareaTableroResponse;
 import com.tareasdomesticas.backend.entity.EstadoTarea;
 import com.tareasdomesticas.backend.entity.Grupo;
@@ -55,7 +60,7 @@ public class TareaService {
                 .findByUsuarioIdUsuario(usuario.getIdUsuario())
                 .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "No pertenece a un grupo"));
 
-        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupo(
+        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupoAndEliminadoFalse(
                 miembro.getGrupo().getIdGrupo()
         );
 
@@ -89,7 +94,7 @@ public class TareaService {
                         "No pertenece a ese grupo"
                 ));
 
-        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupo(idGrupo);
+        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupoAndEliminadoFalse(idGrupo);
 
         return tareas.stream()
                 .sorted(Comparator.comparing(Tarea::getFechaLimite))
@@ -103,6 +108,84 @@ public class TareaService {
                         t.getUsuarioAsignado().getIdUsuario()
                 ))
                 .collect(Collectors.groupingBy(TareaTableroResponse::getEstado));
+    }
+
+    // ===============================
+    // 🧩 FILTRAR TAREAS (HU-011)
+    // ===============================
+    @Transactional(readOnly = true)
+    public FiltrarTareasResponse filtrarTareas(Long idGrupo, List<String> estados,
+            List<String> prioridades, List<Long> idsMiembros, String authorizationHeader) {
+
+        Usuario usuario = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        if (miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuario.getIdUsuario(), idGrupo)
+                .isEmpty()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "No pertenece a ese grupo");
+        }
+
+        List<EstadoTarea> estadosEnum = convertirEstados(estados);
+        List<PrioridadTarea> prioridadesEnum = convertirPrioridades(prioridades);
+
+        List<Tarea> tareas = tareaRepository.findByGrupoIdGrupoAndEliminadoFalse(idGrupo).stream()
+                .filter(t -> estadosEnum == null || estadosEnum.contains(t.getEstado()))
+                .filter(t -> prioridadesEnum == null || prioridadesEnum.contains(t.getPrioridad()))
+                .filter(t -> idsMiembros == null || idsMiembros.isEmpty()
+                        || idsMiembros.contains(t.getUsuarioAsignado().getIdUsuario()))
+                .toList();
+
+        List<DetalleTareaResponse> items = tareas.stream()
+                .map(t -> new DetalleTareaResponse(
+                        t.getIdTarea(),
+                        t.getNombre(),
+                        t.getDescripcion(),
+                        t.getPrioridad(),
+                        t.getEstado(),
+                        t.getFechaLimite(),
+                        t.getGrupo().getIdGrupo(),
+                        t.getUsuarioAsignado().getIdUsuario(),
+                        t.getUsuarioAsignado().getNombre(),
+                        t.isExMiembro()))
+                .toList();
+
+        String mensaje = tareas.isEmpty()
+                ? "No hay tareas que coincidan con los filtros seleccionados"
+                : tareas.size() + " tarea(s) encontrada(s)";
+
+        List<String> estadosAplicados = estadosEnum == null ? null
+                : estadosEnum.stream().map(Enum::name).toList();
+        List<String> prioridadesAplicadas = prioridadesEnum == null ? null
+                : prioridadesEnum.stream().map(Enum::name).toList();
+
+        FiltrarTareasResponse.FiltrosAplicados filtros =
+                new FiltrarTareasResponse.FiltrosAplicados(estadosAplicados, prioridadesAplicadas, idsMiembros);
+
+        return new FiltrarTareasResponse(mensaje, filtros, items);
+    }
+
+    private List<EstadoTarea> convertirEstados(List<String> valores) {
+        if (valores == null || valores.isEmpty()) return null;
+        return valores.stream()
+                .map(s -> {
+                    try { return EstadoTarea.fromString(s); }
+                    catch (Exception e) {
+                        throw new ApiException(HttpStatus.BAD_REQUEST, "Estado invalido: " + s);
+                    }
+                })
+                .toList();
+    }
+
+    private List<PrioridadTarea> convertirPrioridades(List<String> valores) {
+        if (valores == null || valores.isEmpty()) return null;
+        return valores.stream()
+                .map(s -> {
+                    try { return PrioridadTarea.valueOf(s.trim().toUpperCase()); }
+                    catch (Exception e) {
+                        throw new ApiException(HttpStatus.BAD_REQUEST, "Prioridad invalida: " + s);
+                    }
+                })
+                .toList();
     }
 
     // ===============================
@@ -158,6 +241,97 @@ public class TareaService {
         );
     }
 
+            // ===============================
+            // 🧩 DETALLE DE TAREA
+            // ===============================
+            @Transactional(readOnly = true)
+            public DetalleTareaResponse obtenerDetalleTarea(String authorizationHeader, Long idTarea) {
+            Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+            Tarea tarea = tareaRepository.findByIdTareaAndEliminadoFalse(idTarea)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
+
+            miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), tarea.getGrupo().getIdGrupo())
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "No tiene permiso para consultar esta tarea"));
+
+            return new DetalleTareaResponse(
+                tarea.getIdTarea(),
+                tarea.getNombre(),
+                tarea.getDescripcion(),
+                tarea.getPrioridad(),
+                tarea.getEstado(),
+                tarea.getFechaLimite(),
+                tarea.getGrupo().getIdGrupo(),
+                tarea.getUsuarioAsignado().getIdUsuario(),
+                tarea.getUsuarioAsignado().getNombre(),
+                tarea.isExMiembro()
+            );
+            }
+
+    // ===============================
+    // 🧩 EDITAR TAREA
+    // ===============================
+    @Transactional
+    public EditarTareaResponse editarTarea(String authorizationHeader, Long idTarea, EditarTareaRequest request) {
+        Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        Tarea tarea = tareaRepository.findById(idTarea)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
+
+        validarTareaNoEliminada(tarea);
+        evaluarVencimiento(tarea);
+
+        MiembroGrupo miembroAutenticado = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), tarea.getGrupo().getIdGrupo())
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "El usuario no pertenece al grupo de la tarea"));
+
+        boolean esAdministrador = ROL_ADMINISTRADOR.equalsIgnoreCase(miembroAutenticado.getRol().getNombre());
+        if (!esAdministrador) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Solo un administrador puede editar tareas");
+        }
+
+        if (tarea.getEstado() == EstadoTarea.COMPLETADA) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "No se puede editar una tarea completada");
+        }
+
+        boolean permiteFecha = tarea.getEstado() == EstadoTarea.PENDIENTE || tarea.getEstado() == EstadoTarea.EN_PROGRESO;
+
+        if (!permiteFecha && request.getFechaLimite() != null
+                && !request.getFechaLimite().equals(tarea.getFechaLimite())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "La fecha limite no puede modificarse en una tarea vencida");
+        }
+
+        if (permiteFecha && request.getFechaLimite() != null && !request.getFechaLimite().isAfter(LocalDateTime.now())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "La fecha y hora limite deben ser posteriores al momento actual");
+        }
+
+        tarea.setNombre(request.getNombre().trim());
+        tarea.setDescripcion(normalizarDescripcion(request.getDescripcion()));
+        if (request.getPrioridad() != null) {
+            tarea.setPrioridad(request.getPrioridad());
+        }
+        if (permiteFecha && request.getFechaLimite() != null) {
+            tarea.setFechaLimite(request.getFechaLimite());
+        }
+
+        Tarea tareaGuardada = tareaRepository.save(tarea);
+
+        return new EditarTareaResponse(
+                tareaGuardada.getIdTarea(),
+                tareaGuardada.getNombre(),
+                tareaGuardada.getDescripcion(),
+                tareaGuardada.getPrioridad(),
+                tareaGuardada.getEstado(),
+                tareaGuardada.getFechaLimite(),
+                tareaGuardada.getFechaCambioEstado(),
+                tareaGuardada.getGrupo().getIdGrupo(),
+                tareaGuardada.getUsuarioAsignado().getIdUsuario(),
+                "Tarea actualizada correctamente"
+        );
+    }
+
     // ===============================
     // 🧩 CAMBIAR ESTADO
     // ===============================
@@ -167,6 +341,7 @@ public class TareaService {
         Tarea tarea = tareaRepository.findById(idTarea)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
 
+        validarTareaNoEliminada(tarea);
         evaluarVencimiento(tarea);
 
         MiembroGrupo miembroAutenticado = miembroGrupoRepository
@@ -217,12 +392,49 @@ public class TareaService {
     }
 
     // ===============================
+    // ELIMINAR TAREA
+    // ===============================
+    @Transactional
+    public EliminarTareaResponse eliminarTarea(String authorizationHeader, Long idTarea) {
+        Usuario usuarioAutenticado = sesionService.obtenerUsuarioAutenticado(authorizationHeader);
+
+        Tarea tarea = tareaRepository.findById(idTarea)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tarea no encontrada"));
+
+        MiembroGrupo miembroAutenticado = miembroGrupoRepository
+                .findByUsuarioIdUsuarioAndGrupoIdGrupo(usuarioAutenticado.getIdUsuario(), tarea.getGrupo().getIdGrupo())
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "Acceso denegado"));
+
+        boolean esAdministrador = ROL_ADMINISTRADOR.equalsIgnoreCase(miembroAutenticado.getRol().getNombre());
+        if (!esAdministrador) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Acceso denegado");
+        }
+
+        if (tarea.isEliminado()) {
+            throw new ApiException(HttpStatus.CONFLICT, "La tarea ya fue eliminada");
+        }
+
+        LocalDateTime fechaEliminacion = LocalDateTime.now();
+        tarea.setEliminado(true);
+        tarea.setFechaEliminacion(fechaEliminacion);
+
+        Tarea tareaGuardada = tareaRepository.save(tarea);
+
+        return new EliminarTareaResponse(
+                tareaGuardada.getIdTarea(),
+                tareaGuardada.isEliminado(),
+                tareaGuardada.getFechaEliminacion(),
+                "Tarea eliminada correctamente"
+        );
+    }
+
+    // ===============================
     // 🧩 TAREAS VENCIDAS AUTOMÁTICAS
     // ===============================
     @Transactional
     @Scheduled(fixedRate = 60000)
     public void marcarTareasVencidas() {
-        List<Tarea> tareasVencidas = tareaRepository.findByEstadoInAndFechaLimiteBefore(
+        List<Tarea> tareasVencidas = tareaRepository.findByEstadoInAndFechaLimiteBeforeAndEliminadoFalse(
                 List.of(EstadoTarea.PENDIENTE, EstadoTarea.EN_PROGRESO),
                 LocalDateTime.now()
         );
@@ -239,11 +451,19 @@ public class TareaService {
     // 🔧 MÉTODOS AUXILIARES
     // ===============================
     private void evaluarVencimiento(Tarea tarea) {
+        validarTareaNoEliminada(tarea);
+
         if ((tarea.getEstado() == EstadoTarea.PENDIENTE || tarea.getEstado() == EstadoTarea.EN_PROGRESO)
                 && tarea.getFechaLimite().isBefore(LocalDateTime.now())) {
             tarea.setEstado(EstadoTarea.VENCIDA);
             tarea.setFechaCambioEstado(LocalDateTime.now());
             tareaRepository.save(tarea);
+        }
+    }
+
+    private void validarTareaNoEliminada(Tarea tarea) {
+        if (tarea.isEliminado()) {
+            throw new ApiException(HttpStatus.CONFLICT, "La tarea ya fue eliminada");
         }
     }
 

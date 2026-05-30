@@ -5,6 +5,8 @@ import com.tareasdomesticas.backend.dto.InicioSesionRequest;
 import com.tareasdomesticas.backend.dto.InicioSesionResponse;
 import com.tareasdomesticas.backend.dto.RegistroUsuarioRequest;
 import com.tareasdomesticas.backend.dto.RegistroUsuarioResponse;
+import com.tareasdomesticas.backend.dto.RestablecerContrasenaRequest;
+import com.tareasdomesticas.backend.dto.RestablecerContrasenaResponse;
 import com.tareasdomesticas.backend.entity.Sesion;
 import com.tareasdomesticas.backend.entity.Usuario;
 import com.tareasdomesticas.backend.service.MiembroGrupoService;
@@ -114,6 +116,31 @@ public class UsuarioController {
             Map<String, String> error = new HashMap<>();
             error.put("mensaje", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+    }
+
+    @PostMapping("/recuperar-contrasena")
+    public ResponseEntity<?> recuperarContrasena(@RequestBody RestablecerContrasenaRequest request) {
+        try {
+            usuarioService.restablecerContrasena(
+                    request.getCorreo(),
+                    request.getPinSeguridad(),
+                    request.getNuevaContrasena(),
+                    request.getConfirmarContrasena()
+            );
+
+            RestablecerContrasenaResponse response = new RestablecerContrasenaResponse("Contraseña actualizada correctamente");
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("mensaje", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        } catch (RuntimeException e) {
+            // Mensaje genérico para no revelar si el correo existe o si el PIN es incorrecto
+            Map<String, String> error = new HashMap<>();
+            error.put("mensaje", "No fue posible cambiar la contraseña");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
 }

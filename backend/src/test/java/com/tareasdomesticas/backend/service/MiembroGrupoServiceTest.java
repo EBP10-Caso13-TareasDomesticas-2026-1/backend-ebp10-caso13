@@ -10,7 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import java.util.Collections;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -23,6 +27,7 @@ import com.tareasdomesticas.backend.entity.Role;
 import com.tareasdomesticas.backend.entity.Usuario;
 import com.tareasdomesticas.backend.exception.ApiException;
 import com.tareasdomesticas.backend.repository.MiembroGrupoRepository;
+import com.tareasdomesticas.backend.repository.TareaRepository;
 
 @ExtendWith(MockitoExtension.class)
 class MiembroGrupoServiceTest {
@@ -38,6 +43,9 @@ class MiembroGrupoServiceTest {
 
     @Mock
     private RoleService roleService;
+
+    @Mock
+    private TareaRepository tareaRepository;
 
     @InjectMocks
     private MiembroGrupoService miembroGrupoService;
@@ -74,6 +82,8 @@ class MiembroGrupoServiceTest {
             m.setIdMiembroGrupo(99L);
             return m;
         });
+        when(tareaRepository.findByGrupoIdGrupoAndUsuarioAsignadoIdUsuarioAndExMiembro(
+                anyLong(), anyLong(), anyBoolean())).thenReturn(Collections.emptyList());
 
         UnirseGrupoResponse response = miembroGrupoService.unirseAGrupo("Bearer token-valido", request);
 

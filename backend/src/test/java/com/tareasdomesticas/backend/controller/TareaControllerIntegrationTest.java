@@ -13,6 +13,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -23,6 +24,7 @@ import com.tareasdomesticas.backend.entity.Grupo;
 import com.tareasdomesticas.backend.entity.MiembroGrupo;
 import com.tareasdomesticas.backend.entity.Role;
 import com.tareasdomesticas.backend.entity.Sesion;
+import com.tareasdomesticas.backend.entity.Tarea;
 import com.tareasdomesticas.backend.entity.Usuario;
 import com.tareasdomesticas.backend.repository.GrupoRepository;
 import com.tareasdomesticas.backend.repository.MiembroGrupoRepository;
@@ -89,6 +91,11 @@ class TareaControllerIntegrationTest {
         miembroGrupoRepository.save(crearMiembro(adminUsuario, grupoPrincipal, adminRole));
         miembroGrupoRepository.save(crearMiembro(miembroUsuario, grupoPrincipal, miembroRole));
         miembroGrupoRepository.save(crearMiembro(otroGrupoUsuario, grupoSecundario, miembroRole));
+
+        tareaRepository.save(crearTarea("Limpiar cocina", "Descripcion inicial", grupoPrincipal, miembroUsuario,
+                "MEDIA", "PENDIENTE", LocalDateTime.now().plusHours(3)));
+        tareaRepository.save(crearTarea("Organizar sala", "Otra descripcion", grupoPrincipal, miembroUsuario,
+                "ALTA", "COMPLETADA", LocalDateTime.now().plusHours(2)));
 
         sesionRepository.save(crearSesion(adminUsuario, "token-admin", LocalDateTime.now().plusHours(2), null));
         sesionRepository.save(crearSesion(miembroUsuario, "token-miembro", LocalDateTime.now().plusHours(2), null));
@@ -310,6 +317,73 @@ class TareaControllerIntegrationTest {
                 .andExpect(jsonPath("$.mensaje").value("Token de sesion invalido"));
     }
 
+    @Test
+    void editarTarea_caminoFeliz_retornaOk() throws Exception {
+        Tarea tarea = tareaRepository.findAll().stream()
+                .filter(item -> "Limpiar cocina".equals(item.getNombre()))
+                .findFirst()
+                .orElseThrow();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("nombre", "Limpiar cocina profunda");
+        body.put("descripcion", "Agregar estantes");
+        body.put("prioridad", "ALTA");
+        body.put("fechaLimite", LocalDateTime.now().plusHours(5).toString());
+
+        mockMvc.perform(patch("/tareas/{idTarea}", tarea.getIdTarea())
+                        .header("Authorization", "Bearer token-admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.idTarea").value(tarea.getIdTarea()))
+                .andExpect(jsonPath("$.nombre").value("Limpiar cocina profunda"))
+                .andExpect(jsonPath("$.prioridad").value("ALTA"))
+                .andExpect(jsonPath("$.estado").value("PENDIENTE"))
+                .andExpect(jsonPath("$.mensaje").value("Tarea actualizada correctamente"));
+    }
+
+    @Test
+    void editarTarea_completada_retornaForbidden() throws Exception {
+        Tarea tarea = tareaRepository.findAll().stream()
+                .filter(item -> "Organizar sala".equals(item.getNombre()))
+                .findFirst()
+                .orElseThrow();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("nombre", "Organizar sala renovada");
+        body.put("descripcion", "Nueva descripcion");
+        body.put("prioridad", "BAJA");
+        body.put("fechaLimite", LocalDateTime.now().plusHours(5).toString());
+
+        mockMvc.perform(patch("/tareas/{idTarea}", tarea.getIdTarea())
+                        .header("Authorization", "Bearer token-admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensaje").value("No se puede editar una tarea completada"));
+    }
+
+        @Test
+        void editarTarea_sinTitulo_retornaBadRequest() throws Exception {
+                Tarea tarea = tareaRepository.findAll().stream()
+                                .filter(item -> "Limpiar cocina".equals(item.getNombre()))
+                                .findFirst()
+                                .orElseThrow();
+
+                Map<String, Object> body = new HashMap<>();
+                body.put("nombre", "");
+                body.put("descripcion", "Nueva descripcion");
+                body.put("prioridad", "MEDIA");
+                body.put("fechaLimite", LocalDateTime.now().plusHours(5).toString());
+
+                mockMvc.perform(patch("/tareas/{idTarea}", tarea.getIdTarea())
+                                                .header("Authorization", "Bearer token-admin")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(body)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.errores.nombre").value("El nombre es obligatorio"));
+        }
+
     private Usuario crearUsuario(String nombre, String correo) {
         Usuario usuario = new Usuario();
         usuario.setNombre(nombre);
@@ -346,6 +420,21 @@ class TareaControllerIntegrationTest {
         sesion.setCerradaEn(cerradaEn);
         return sesion;
     }
+
+        private Tarea crearTarea(String nombre, String descripcion, Grupo grupo, Usuario asignado,
+                                                         String prioridad, String estado, LocalDateTime fechaLimite) {
+                Tarea tarea = new Tarea();
+                tarea.setNombre(nombre);
+                tarea.setDescripcion(descripcion);
+                tarea.setGrupo(grupo);
+                tarea.setUsuarioAsignado(asignado);
+                tarea.setPrioridad(com.tareasdomesticas.backend.entity.PrioridadTarea.valueOf(prioridad));
+                tarea.setEstado(com.tareasdomesticas.backend.entity.EstadoTarea.valueOf(estado));
+                tarea.setFechaLimite(fechaLimite);
+                tarea.setFechaCreacion(LocalDateTime.now());
+                tarea.setFechaCambioEstado(LocalDateTime.now());
+                return tarea;
+        }
 
     private Map<String, Object> crearBody(String nombre,
                                           String descripcion,

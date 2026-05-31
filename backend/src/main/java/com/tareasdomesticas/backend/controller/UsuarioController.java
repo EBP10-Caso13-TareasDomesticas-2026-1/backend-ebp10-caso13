@@ -119,7 +119,7 @@ public class UsuarioController {
         }
     }
 
-    @PostMapping("/recuperar-contrasena")
+    @PutMapping("/recuperar-contrasena")
     public ResponseEntity<?> recuperarContrasena(@RequestBody RestablecerContrasenaRequest request) {
         try {
             usuarioService.restablecerContrasena(

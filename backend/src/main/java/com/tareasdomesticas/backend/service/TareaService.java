@@ -71,6 +71,7 @@ public class TareaService {
                         t.getNombre(),
                         t.getUsuarioAsignado().getNombre(),
                         t.getEstado(),
+                        t.getPrioridad(),
                         t.getFechaLimite(),
                         t.getEstado() == EstadoTarea.VENCIDA,
                         t.getUsuarioAsignado().getIdUsuario()
@@ -103,6 +104,7 @@ public class TareaService {
                         t.getNombre(),
                         t.getUsuarioAsignado().getNombre(),
                         t.getEstado(),
+                        t.getPrioridad(),
                         t.getFechaLimite(),
                         t.getEstado() == EstadoTarea.VENCIDA,
                         t.getUsuarioAsignado().getIdUsuario()
